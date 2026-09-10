@@ -1,0 +1,151 @@
+.table-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  margin: 12px 0;
+  background: #faf3e2f5;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+}
+.table-nav a {
+  color: var(--green);
+  text-decoration: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  text-align: center;
+}
+.table-nav a:hover {
+  background: #e4e8d3;
+}
+#action-area,
+#hand-panel,
+#estate-panel,
+#log-panel {
+  scroll-margin-top: 70px;
+}
+.hand-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 12px 0;
+}
+.hand-filters [aria-pressed='true'] {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+}
+.public-hand-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  font-size: 10px;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+.action-reason {
+  color: #795036;
+  border-top: 1px dashed var(--line);
+  padding-top: 5px;
+}
+.table-info summary {
+  font-size: 12px;
+}
+.table-info .ee-heading {
+  margin-top: 12px;
+}
+.ee-choice {
+  padding: 14px 18px;
+}
+.action-preview:not(:empty) {
+  border-left: 3px solid var(--green);
+  background: #e8edda;
+  padding: 8px 12px;
+  font-size: 13px;
+  margin-top: 16px;
+}
+.action-preview p {
+  margin: 5px 0;
+}
+.ee-buttons {
+  position: sticky;
+  bottom: -24px;
+  padding: 12px 0;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+}
+.ee-buttons .primary {
+  flex: 1;
+}
+dialog {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+body[data-season='lobby'] #season-track,
+body[data-season='lobby'] .table-nav,
+body[data-season='lobby'] .play-layout {
+  display: none;
+}
+@media (max-width: 760px) {
+  .table-nav {
+    position: fixed;
+    top: auto;
+    bottom: 8px;
+    left: 10px;
+    right: 10px;
+    margin: 0;
+    box-shadow: 0 4px 24px #30281e33;
+    padding: 4px;
+  }
+  .table-nav a {
+    flex: 1;
+    padding: 10px 3px;
+    font-size: 12px;
+  }
+  body:not([data-season='lobby']) main {
+    padding-bottom: 76px;
+  }
+  #action-area,
+  #hand-panel,
+  #estate-panel,
+  #log-panel {
+    scroll-margin-top: 12px;
+  }
+  .board-panorama {
+    height: 70px;
+  }
+  .board-panorama > div {
+    padding: 10px;
+  }
+  .board-panorama span,
+  .board-panorama small {
+    display: none;
+  }
+  .board-panorama h3 {
+    font-size: 22px;
+  }
+  .ee-choice {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  #ee-action-dialog {
+    padding: 18px;
+    width: calc(100vw - 20px);
+  }
+  .ee-buttons {
+    bottom: -18px;
+  }
+  #toast {
+    bottom: 78px;
+  }
+  .hand-filters {
+    gap: 5px;
+  }
+  .hand-filters button {
+    padding: 8px 10px;
+  }
+}

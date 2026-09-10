@@ -12,7 +12,6 @@ runtime/
 # Builds, temporary tools and generated evidence
 *.exe
 *.zip
-*.png
 artifacts/
 dist/
 .tools/
