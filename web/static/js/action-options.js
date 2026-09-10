@@ -17,6 +17,7 @@ export function defaultLarge(space, player) {
 }
 
 export function actionReason(space, view) {
+  if (view.actionReasons?.[space.id]) return view.actionReasons[space.id];
   const p = view.players.find((p) => p.id === view.youId);
   if (space.disabledReason) return space.disabledReason;
   if (!p.workers && !p.largeWorker) return '没有待命工人，可结束本季';

@@ -343,7 +343,7 @@ func TestEEParentChoiceView(t *testing.T) {
 	if own["pendingChoice"].(Choice).ID != c.ID || !own["legal"].(map[string]bool)["canChoose"] {
 		t.Fatal("owner cannot choose")
 	}
-	other := r.View(r.Players[1].ID)
+	other := r.View(r.Players[(r.SpringLeader+1)%len(r.Players)].ID)
 	b, _ := json.Marshal(other["pendingChoice"])
 	if bytes.Contains(b, []byte(c.ID)) || other["legal"].(map[string]bool)["canChoose"] {
 		t.Fatal("choice authority leaked")

@@ -1,4 +1,6 @@
 import { cardInfo, localCard } from './card-i18n.js';
+import { hint, optionResourceReason } from './hints.js';
+import { visitorLabel } from './visitor-labels.js';
 const node = (tag, text, cls) => {
   const e = document.createElement(tag);
   if (text != null) e.textContent = text;
@@ -298,22 +300,36 @@ export function renderVisitor(box, v, act, online) {
     return true;
   }
   const key = JSON.stringify([v.code, v.youId, c.id]);
+  const reasons = Object.fromEntries(
+    (c.options || []).map((option) => [
+      option,
+      v.optionReasons?.[option] || optionResourceReason(v, c, choiceFields(c, option)),
+    ]),
+  );
+  const firstAvailable =
+    (c.options || []).find((option) => !reasons[option]) || c.options?.[0] || '';
   if (draft?.key !== key)
-    draft = { key, option: c.options?.[0] || '', values: {}, busy: false, error: '' };
+    draft = { key, option: firstAvailable, values: {}, busy: false, error: '' };
   const d = draft;
   d.view = v;
   d.online = online;
   d.box = box;
-  if (!(c.options || []).includes(d.option)) d.option = c.options?.[0] || '';
+  if (!(c.options || []).includes(d.option) || reasons[d.option]) {
+    d.option = firstAvailable;
+    d.values = {};
+  }
   const p = v.players.find((p) => p.id === v.youId),
     info = cardInfo(c.visitor?.cardId),
     title = node('h3', info?.name || '访客后续行动');
   box.append(title);
+  const details = node('details', null, 'visitor-details');
+  details.append(node('summary', '效果与费用'));
   if (info)
-    box.append(
-      node('small', info.englishName + ' · ' + c.visitor.cardId, 'card-english'),
+    details.append(
+      node('small', info.englishName, 'card-english'),
       node('p', info.description, 'visitor-rules'),
     );
+  box.append(details);
   box.append(
     node(
       'p',
@@ -337,7 +353,7 @@ export function renderVisitor(box, v, act, online) {
     ),
   );
   const cost = visitorCost(c, d.option, p);
-  if (cost) box.append(node('p', cost, 'visitor-cost'));
+  if (cost) details.append(node('p', cost, 'visitor-cost'));
   const options = node('div', null, 'visitor-options');
   options.setAttribute('role', 'group');
   options.setAttribute('aria-label', '访客效果选项');
@@ -349,6 +365,7 @@ export function renderVisitor(box, v, act, online) {
     const b = node(
       'button',
       c.labels?.[option] ||
+        visitorLabel(c, option, p) ||
         (c.visitor?.cardId === 'winter-11' && c.visitor?.stage === 'reply'
           ? { vp: '失去 1 胜利分', cards: '给出牌者 2 张手牌', coins: '付出牌者 3 金币' }[option]
           : null) ||
@@ -360,7 +377,12 @@ export function renderVisitor(box, v, act, online) {
     b.dataset.visitorOption = option;
     b.setAttribute('aria-pressed', String(d.option === option));
     b.disabled = !online || d.busy;
+    hint(b, reasons[option] || '选择此效果，再指定资源', !!reasons[option]);
+    b.classList.toggle('option-ready', !reasons[option]);
+    const badge = node('small', reasons[option] ? '不可用' : '可选', 'option-state');
+    b.append(badge);
     b.onclick = () => {
+      if (reasons[option] || !online || d.busy) return;
       d.option = option;
       d.values = {};
       d.error = '';
@@ -372,11 +394,13 @@ export function renderVisitor(box, v, act, online) {
     controls = node('fieldset');
   controls.disabled = !online || d.busy;
   form.append(controls);
+  form.setAttribute('aria-busy', String(d.busy));
   box.append(form);
   const readers = [],
     validators = [],
     fields = choiceFields(c, d.option).map(normalize);
   let unsupported = false;
+  let refreshReady = () => {};
   if (c.kind === 'planner') {
     const plan = v.planned?.[0],
       sp = (v.spaces || []).find((x) => x.id === plan?.space);
@@ -494,6 +518,7 @@ export function renderVisitor(box, v, act, online) {
   }
   const put = (name, value) => {
     d.values[name] = value;
+    refreshReady();
   };
   function chooser(name, label, items, multi = false, min = 1, max = 1) {
     const section = node('section', null, 'visitor-resource'),
@@ -501,16 +526,17 @@ export function renderVisitor(box, v, act, online) {
       status = node('small');
     section.append(heading, status);
     controls.append(section);
-    const exists = new Set(items.map((i) => String(i[0])));
+    const usable = items.filter(([, , reason]) => !reason);
+    const exists = new Set(usable.map((i) => String(i[0])));
     let value = d.values[name];
     if (multi) {
       value = (Array.isArray(value) ? value : []).filter((x) => exists.has(String(x)));
-    } else if (!exists.has(String(value))) value = items[0]?.[0] ?? '';
+    } else if (!exists.has(String(value))) value = usable[0]?.[0] ?? '';
     put(name, value);
     const update = () => {
       status.textContent = multi
         ? '已选 ' + d.values[name].length + ' · 要求 ' + min + '–' + max
-        : '请选择一项';
+        : '选择一项';
       for (const b of section.querySelectorAll('button'))
         b.setAttribute(
           'aria-pressed',
@@ -520,12 +546,15 @@ export function renderVisitor(box, v, act, online) {
               : String(d.values[name]) === b.dataset.value,
           ),
         );
+      refreshReady();
     };
-    for (const [val, text] of items) {
+    for (const [val, text, reason] of items) {
       const b = node('button', text, 'resource-chip');
       b.type = 'button';
       b.dataset.value = String(val);
+      hint(b, reason || '选择这项资源', !!reason);
       b.onclick = () => {
+        if (reason) return;
         if (multi) {
           const a = d.values[name];
           put(
@@ -600,6 +629,7 @@ export function renderVisitor(box, v, act, online) {
         e.classList.toggle('visitor-selected', yes);
         e.setAttribute('aria-pressed', String(yes));
       }
+      refreshReady();
     };
     for (const e of document.querySelectorAll('#hand .card')) {
       if (!valid.has(e.dataset.cardId)) continue;
@@ -651,6 +681,7 @@ export function renderVisitor(box, v, act, online) {
               .map((x) => [x.index, '田地 ' + (x.index + 1) + ' · 容量 ' + x.capacity]),
             destinations,
           );
+        refreshReady();
       };
       const read = handSelect({ ...f, name: 'cardIds', filter: 'vine' }, updateFields);
       controls.append(destinations);
@@ -783,10 +814,11 @@ export function renderVisitor(box, v, act, online) {
               (!f.small || b[1] <= 3) &&
               (isMulti || id !== 'large_cellar' || p.buildings.includes('medium_cellar')),
           )
-          .map(([id, b]) => [
-            id,
-            b[0] + ' · 原价 ' + b[1] + ' / 本次 ' + buildingCost(c, b[1]) + ' 金币',
-          ]),
+          .map(([id, b]) => {
+            const cost = buildingCost(c, b[1]);
+            const reason = cost > p.coins ? `还差 ${cost - p.coins} 金币` : '';
+            return [id, b[0] + ' · ' + cost + ' 金币', reason];
+          }),
         isMulti,
         f.min,
         f.max,
@@ -923,10 +955,30 @@ export function renderVisitor(box, v, act, online) {
   send.type = 'submit';
   send.disabled = !online || d.busy || unsupported || !d.option;
   send.dataset.visitorSubmit = 'true';
-  form.append(error, send);
+  const readiness = node('small', null, 'form-readiness');
+  readiness.setAttribute('role', 'status');
+  form.append(error, readiness, send);
+  refreshReady = () => {
+    let missing = reasons[d.option] || '';
+    if (!missing) {
+      try {
+        validators.forEach((check) => check());
+        const candidate = {};
+        readers.forEach((read) => read(candidate));
+      } catch (e) {
+        missing = e.message;
+      }
+    }
+    send.disabled = !online || d.busy || unsupported || !d.option || !!missing;
+    readiness.textContent = missing ? missing.slice(0, 36) : '✓ 已就绪';
+    readiness.classList.toggle('ready', !missing);
+    hint(readiness, missing || '已选好本步骤所需资源');
+    hint(send, missing || '提交所选效果与资源', !!missing);
+  };
+  refreshReady();
   form.onsubmit = async (event) => {
     event.preventDefault();
-    if (draft !== d || d.busy || !d.online || unsupported) return;
+    if (draft !== d || d.busy || !d.online || unsupported || reasons[d.option]) return;
     try {
       validators.forEach((check) => check());
       const a = { type: 'choose', choiceId: c.id, revision: d.view.revision, option: d.option };

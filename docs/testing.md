@@ -22,9 +22,10 @@ Linux 使用 `go build -trimpath -o dist/viticulture ./cmd/viticulture`。E2E �
 ## 本次本地结果
 
 - 全部默认测试、ee_rule_audit、audit_diff，以及 go vet 通过。
-- usability-test：7 组操作体验场景，桌面／手机视口、工人选择、手牌筛选、拔藤和酿酒提交、局面更新及恢复入口通过。
+- usability-test：8 组操作体验场景，桌面／手机视口、工人选择、手牌筛选、拔藤和酿酒提交、局面更新、恢复入口、条件气泡与确认按钮联动通过。
 - rules-fix-browser-test：5 组规则与访客交互回归通过。
 - visitor-browser-test：141 个初始选项场景通过，含多个需要续步或多人回复的访客；这是夹具测试，不是 141 局自然游戏。
+- special-browser-test：19 个 Planner、Organizer、Queen 和冬初预约场景通过。
 - natural-full-game-test：未注入资源的一局随机牌序游戏完成（11 年），验证 HTTP/SSE 手牌隔离、过期 revision、轮次、断线和重启恢复、20 分年末终局。
 - discard-browser-test：实际建房、父母选择、四季流程、桌面和手机弃牌验证通过。
 - Windows 本机 exe 的 health、内嵌网页、鉴权、创建／加入／开始、落盘和重启恢复全部通过，使用临时存档。

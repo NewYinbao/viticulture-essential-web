@@ -15,6 +15,8 @@
 
 状态包括 code/year/phase/revision/turnId/youId、公开 players/spaces、本人 hand 和 pendingChoice。`players[].handCount` 是总数，`handCounts` 为 vine/order/summer/winter 的公开数量；其他人的牌面、牌 ID 和牌堆顺序不公开。仅选择队列的首位拥有者能看到并提交 choiceId/options。
 
+actionReasons / cardReasons / optionReasons 是当前玩家的操作提示；键分别对应行动、本人手牌和当前选择选项，非空值表示已知不满足的前置条件。空值不是任意资源组合都合法的承诺。提示计算不执行行动，也不提供未来牌序信息。
+
 流程：lobby → setup → wake → summer → fall → winter → year_end → wake/finished。legal 控制当前玩家可执行的操作，但不表示每个具体资源组合都合法。
 
 行动提交携带最新 revision；旧 revision 返回 409，规则错误返回 400，失败不会提交部分状态。普通 place 使用 space/large/slot；slot=0 自动，slot=-1 只允许没有空格时的大工人溢出。3 人以上第 1 格提供奖励；`declineBonus:true` 可放弃奖励。

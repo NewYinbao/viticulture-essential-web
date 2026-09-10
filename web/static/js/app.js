@@ -1,8 +1,10 @@
-import { actionReason, defaultLarge, privateSpace } from './action-options.js';
+import { actionReason, defaultLarge, privateSpace, hasBonus } from './action-options.js';
+import { hint, installHints } from './hints.js';
 import { localCard } from './card-i18n.js';
 import { renderEE, cardArt, setupEE } from './ee-ui.js';
 import { art, worker, decorateTable, renderEstate, actionArt } from './graphics.js';
 const $ = (s) => document.querySelector(s);
+installHints();
 const el = (tag, text, cls) => {
   const e = document.createElement(tag);
   if (text != null) e.textContent = text;
@@ -194,12 +196,33 @@ function render(v) {
       ),
     );
     const reason = actionReason(s, v);
-    b.disabled = !v.legal.canPlace || !online || !!reason;
-    if (reason) {
-      b.append(el('small', reason, 'action-reason'));
-      b.title = reason;
-    }
-    b.onclick = () => openAction(s);
+    b.disabled = !v.legal.canPlace || !online;
+    const ready = v.legal.canPlace && online && !reason;
+    b.classList.toggle('action-ready', ready);
+    b.append(el('span', reason ? '条件不足' : ready ? '可派遣' : '等待', 'availability-badge'));
+    hint(b, reason || (ready ? '选择工人与资源' : '等待你的行动回合'), !!reason);
+    const cardType = {
+      plant: 'vine',
+      fill_order: 'order',
+      summer_visitor: 'summer',
+      winter_visitor: 'winter',
+    }[s.id];
+    const focusCards = (on) =>
+      document
+        .querySelectorAll('#hand .card')
+        .forEach((card) =>
+          card.classList.toggle(
+            'action-linked',
+            on && !!cardType && card.dataset.cardType === cardType,
+          ),
+        );
+    b.onpointerenter = () => focusCards(true);
+    b.onpointerleave = () => focusCards(false);
+    b.onfocus = () => focusCards(true);
+    b.onblur = () => focusCards(false);
+    b.onclick = () => {
+      if (ready) openAction(s);
+    };
     board.append(b);
   }
   const choosingCards = !!v.pendingChoice && v.pendingChoice.playerId === v.youId;
@@ -231,6 +254,7 @@ function render(v) {
     const c = localCard(original);
     const e = el('article', null, 'card ' + c.type);
     e.dataset.cardId = c.id;
+    e.dataset.cardType = c.type;
     e.hidden = handFilter !== 'all' && c.type !== handFilter;
     e.append(cardArt(c, 'card-art'));
     e.append(
@@ -247,6 +271,26 @@ function render(v) {
       );
     if (['summer', 'winter'].includes(c.type) && !c.implemented)
       e.append(el('small', '效果尚未实现 / 不可打出', 'ee-warning'));
+    if (v.legal.canPlace && !choosingCards) {
+      const actionID = {
+        vine: 'plant',
+        order: 'fill_order',
+        summer: 'summer_visitor',
+        winter: 'winter_visitor',
+      }[c.type];
+      const space = v.spaces.find((s) => s.id === actionID && s.season === v.phase);
+      if (space) {
+        const reason = v.cardReasons?.[c.id] || actionReason(space, v);
+        const label = reason
+          ? '条件不足'
+          : { vine: '可种植', order: '可交付', summer: '可打出', winter: '可打出' }[c.type];
+        e.classList.toggle('card-ready', !reason);
+        const badge = el('span', label, 'card-state');
+        badge.tabIndex = 0;
+        hint(badge, reason || '在对应行动中选择此牌', !!reason);
+        e.append(badge);
+      }
+    }
     hand.append(e);
   }
   if (!v.hand?.length) hand.append(el('p', '暂无手牌', 'empty'));
@@ -387,6 +431,7 @@ function selectField(parent, name, label, items) {
   if (items.length === 1) s.value = items[0][0];
   l.append(s);
   parent.append(l);
+  return s;
 }
 function checks(parent, name, label, items) {
   parent.append(el('p', label));
@@ -473,6 +518,47 @@ function openAction(s) {
       '选择要交付的葡萄酒',
       p.wines.map((w) => [w.id, `${types[w.type]}葡萄酒 · 品质 ${w.value}`]),
     );
+  const cardSelect = f.querySelector('[name=cardId]');
+  if (cardSelect)
+    for (const option of cardSelect.options) {
+      const reason = state.cardReasons?.[option.value];
+      if (reason) {
+        option.disabled = true;
+        option.textContent += ' · ' + reason;
+      }
+    }
+  const slotSelect = f.querySelector('[name=slot]');
+  if (slotSelect)
+    for (const option of slotSelect.options)
+      if (s.occupied.some((o) => o.slot === Number(option.value))) option.disabled = true;
+  const buildSelect = f.querySelector('[name=building]');
+  if (buildSelect) {
+    const updateBuildings = () => {
+      const discount = hasBonus(
+        s,
+        slotSelect?.value,
+        f.querySelector('[name=declineBonus]')?.value === 'yes',
+      )
+        ? 1
+        : 0;
+      for (const option of buildSelect.options) {
+        if (!option.value) continue;
+        const label = buildings[option.value].split(' · ')[0],
+          cost = Number(buildings[option.value].match(/\d+/)[0]) - discount;
+        const reason =
+          option.value === 'large_cellar' && !p.buildings.includes('medium_cellar')
+            ? '需要中酒窖'
+            : p.coins < cost
+              ? `还差 ${cost - p.coins} 金币`
+              : '';
+        option.disabled = !!reason;
+        option.textContent = `${label} · ${cost} 金币${reason ? ' · ' + reason : ''}`;
+      }
+      if (buildSelect.selectedOptions[0]?.disabled) buildSelect.value = '';
+    };
+    f.addEventListener('change', updateBuildings);
+    updateBuildings();
+  }
   $('#action-dialog').showModal();
 }
 $('#close-dialog').onclick = () => $('#action-dialog').close();

@@ -149,3 +149,124 @@ body[data-season='lobby'] .play-layout {
     padding: 8px 10px;
   }
 }
+.space.action-ready {
+  border: 2px solid #557c47;
+  box-shadow: 0 3px 0 #46643755;
+}
+.space.action-ready:hover,
+.space.action-ready:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 14px #36513744;
+}
+.availability-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 8px;
+  font-size: 10px;
+  border-radius: 20px;
+  background: #465c3de8;
+  color: #fffbee;
+}
+.space.is-blocked .availability-badge {
+  background: #6b6254eb;
+}
+.space.is-blocked {
+  border-style: dashed;
+  background: #eee9da;
+  box-shadow: none;
+  cursor: help;
+}
+.space.is-blocked .action-art {
+  filter: saturate(0.3);
+}
+.space.is-blocked:hover {
+  background: #eee9da;
+  box-shadow: none;
+  transform: none;
+}
+.space:disabled .availability-badge {
+  background: #817764;
+}
+#context-hint {
+  position: fixed;
+  z-index: 10000;
+  padding: 9px 12px;
+  max-width: min(290px, calc(100vw - 24px));
+  background: #303e31;
+  color: #fff7e6;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px #0003;
+  pointer-events: none;
+}
+.option-ready {
+  border-color: #718965;
+}
+.visitor-options .is-blocked {
+  background: #ede8db;
+  border-style: dashed;
+  color: #786957;
+  cursor: help;
+}
+.option-state {
+  display: inline-block;
+  margin-left: 9px;
+  padding: 1px 6px;
+  font-size: 10px;
+  background: #e0e8d6;
+  color: #405a37;
+  border-radius: 12px;
+}
+.is-blocked .option-state {
+  background: #ded6c8;
+  color: #76654e;
+}
+.visitor-options .primary .option-state {
+  background: #ffffff25;
+  color: white;
+}
+.visitor-details {
+  font-size: 12px;
+  margin: 8px 0;
+}
+.visitor-details summary {
+  color: var(--muted);
+}
+.visitor-stage {
+  font-size: 11px;
+  margin: 8px 0;
+}
+.form-readiness {
+  display: block;
+  font-size: 12px;
+  color: #8c572f;
+  margin: 10px 0;
+}
+.form-readiness.ready {
+  color: #45663b;
+}
+.card-ready,
+.card.action-linked {
+  outline: 2px solid #6e8a56;
+  outline-offset: 2px;
+}
+.card-state {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: #e1e9d5;
+  color: #42613a;
+  font-size: 10px;
+  margin-top: 7px;
+}
+.card-state.is-blocked {
+  background: #e7dfd1;
+  color: #78664f;
+}
+.resource-chip:not([aria-disabled='true']):hover,
+.resource-chip:focus-visible {
+  border-color: #547144;
+  background: #e5ecd9;
+}
