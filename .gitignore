@@ -1,0 +1,33 @@
+# Runtime state and credentials (never source-controlled)
+ee-data/
+data*/
+runtime/
+**/ee-state-v1.json
+**/ee-state-v1.json.tmp
+.env
+.env.*
+*.key
+*.pem
+
+# Builds, temporary tools and generated evidence
+*.exe
+*.zip
+*.png
+artifacts/
+dist/
+.tools/
+node_modules/
+*-evidence/
+stage-screenshots/
+*-result.json
+*verification.json
+*-changed-files.json
+references/
+*-backup*/
+
+# Local editor/OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+__pycache__/
