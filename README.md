@@ -8,6 +8,10 @@ Go + 原生 HTML/CSS/JavaScript 实现。网页、中文卡牌说明和 SVG 随�
 
 [快速开始](#快速开始) · [版本记录](docs/README.md) · [开发指南](docs/guides/architecture.md) · [Buy me a HEYTEA](#buy-me-a-heytea)
 
+## 下载 Windows 版
+
+打开 [Release 下载页](https://github.com/NewYinbao/viticulture-essential-web/releases/latest)，下载 Windows x64 ZIP，解压后双击包内的 Start-Viticulture.cmd。无需安装 Go 或 Node.js。仓库目前为私有，下载需要仓库访问权限。
+
 ## 可以玩什么
 
 | 内容 | 支持情况 |

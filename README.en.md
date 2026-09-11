@@ -8,6 +8,10 @@ Built with Go and plain HTML/CSS/JavaScript. A single executable embeds the web 
 
 [Quick start](#quick-start) · [Version history](docs/README.md) · [Development guide](docs/guides/architecture.md) · [Buy me a HEYTEA](#buy-me-a-heytea)
 
+## Download for Windows
+
+Open the [Releases page](https://github.com/NewYinbao/viticulture-essential-web/releases/latest), download the Windows x64 ZIP, extract it, and double-click Start-Viticulture.cmd. No Go or Node.js installation is needed. This repository is private; downloads require repository access.
+
 ## Features
 
 | Content | Support |
