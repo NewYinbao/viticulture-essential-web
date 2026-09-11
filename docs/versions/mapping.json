@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "identityPolicy": "Each archived version is identified by its Git commit. Numeric directory prefixes are chronological archive order only; no semantic version or Git tag is asserted.",
+  "documentFiles": [
+    "development.md",
+    "validation.md",
+    "release-notes.md"
+  ],
+  "versions": [
+    {
+      "order": 1,
+      "commit": "cea1f3490423af384f06c8d439fd5d1e59dedea4",
+      "shortCommit": "cea1f34",
+      "date": "2026-09-10T23:53:20+08:00",
+      "title": "chore: capture existing EE implementation before restructuring",
+      "directory": "01-baseline-cea1f34",
+      "records": {
+        "history": "01-baseline-cea1f34/records",
+        "audits": "01-baseline-cea1f34/records/audits"
+      }
+    },
+    {
+      "order": 2,
+      "commit": "f9227db2ed09b8c37df9fe4eabb08ee497589a30",
+      "shortCommit": "f9227db",
+      "date": "2026-09-11T00:33:31+08:00",
+      "title": "refactor: separate game server storage and web; reconcile EE rules and improve play flow",
+      "directory": "02-refactor-f9227db",
+      "records": {
+        "rulesReview": "02-refactor-f9227db/records/rules-review.md",
+        "uiReview": "02-refactor-f9227db/records/ui-review.md",
+        "testing": "02-refactor-f9227db/records/testing.md"
+      }
+    },
+    {
+      "order": 3,
+      "commit": "43bd5ed038e729e89dfb2963ef3218abd9dada13",
+      "shortCommit": "43bd5ed",
+      "date": "2026-09-11T00:45:54+08:00",
+      "title": "feat: highlight available actions and explain unmet prerequisites with compact hints",
+      "directory": "03-action-hints-43bd5ed",
+      "records": {
+        "uiReview": "03-action-hints-43bd5ed/records/ui-review.md",
+        "testing": "03-action-hints-43bd5ed/records/testing.md"
+      }
+    },
+    {
+      "order": 4,
+      "commit": "1f0dd8be066797774448ae16e0879564c0986568",
+      "shortCommit": "1f0dd8b",
+      "date": "2026-09-11T09:28:08+08:00",
+      "title": "feat: replace public action dialogs with board-local card panels",
+      "directory": "04-board-panels-1f0dd8b",
+      "records": {
+        "uiReview": "04-board-panels-1f0dd8b/records/ui-review.md",
+        "testing": "04-board-panels-1f0dd8b/records/testing.md"
+      }
+    },
+    {
+      "order": 5,
+      "commit": "80e9f7c4234e9e10bd19dabc01122e429436c242",
+      "shortCommit": "80e9f7c",
+      "date": "2026-09-11T09:49:25+08:00",
+      "title": "feat: add inspectable planting requirements and contextual beginner guidance",
+      "directory": "05-guidance-80e9f7c",
+      "records": {
+        "uiReview": "05-guidance-80e9f7c/records/ui-review.md",
+        "testing": "05-guidance-80e9f7c/records/testing.md"
+      }
+    },
+    {
+      "order": 6,
+      "commit": "563db1b1c6f7a08e6e79dcab09c7c7b659fcd077",
+      "shortCommit": "563db1b",
+      "date": "2026-09-12T01:45:00+08:00",
+      "title": "feat: complete expansions, player passwords and contextual UI",
+      "directory": "06-expansions-563db1b",
+      "records": {
+        "expansionRecords": "06-expansions-563db1b/records",
+        "stages": "06-expansions-563db1b/records/stages",
+        "audits": "06-expansions-563db1b/records/audits",
+        "cloudflare": "06-expansions-563db1b/records/cloudflare.md"
+      },
+      "ci": {
+        "provider": "GitHub Actions",
+        "runId": 34629523327,
+        "conclusion": "success",
+        "url": "https://github.com/NewYinbao/viticulture-essential-web/actions/runs/34629523327"
+      }
+    }
+  ],
+  "currentGuides": [
+    "docs/guides/architecture.md",
+    "docs/guides/api.md",
+    "docs/guides/testing.md"
+  ]
+}

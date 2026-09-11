@@ -1,64 +1,96 @@
-# 葡萄酒庄园 · Essential Edition Web
+# 葡萄酒庄园 · Viticulture Web
 
-Go + 原生 HTML/CSS/JavaScript 的局域网多人桌游实现。支持 EE 本体 2–6 位真人、固定卡库、76 张访客、独立手牌、SSE 同步及本地 JSON 存档。单个可执行文件内嵌网页与 SVG，不需要 Java、Node 或外网即可游玩。
+**中文** · [English](README.en.md)
 
-本轮续作加入玩家座位密码与可选扩展，交付状态、测试及规则依据见 [最新交付记录](docs/expansions-release.md) 和 [玩家密码说明](docs/玩家密码与续作记录-20260911.md)。新程序使用 **Start-Viticulture-Continuation.cmd**，地址 `http://localhost:3015`、独立存档 `runtime/continuation-data`。它不会升级已运行的旧程序或迁移旧对局；以下原启动入口仍保留。
+把葡萄酒庄园搬到浏览器：2–6 位朋友各自经营酒庄，在同一个房间里种植、酿酒、招待访客和交付订单。
 
-## 启动
+Go + 原生 HTML/CSS/JavaScript 实现。网页、中文卡牌说明和 SVG 随单个程序内嵌；局域网游玩无需 Node.js 或外网。游戏界面目前以中文为主。
 
-本机已有构建时，双击 **Start-Viticulture.cmd**。主机打开 http://localhost:3013；朋友打开 `http://主机局域网IP:3013`，输入房间码加入。
+[快速开始](#快速开始) · [版本记录](docs/README.md) · [开发指南](docs/guides/architecture.md) · [Buy me a HEYTEA](#buy-me-a-heytea)
 
-新启动器使用 `runtime/ee-data`，与旧版目录隔离。返回入口后可点“回到上次的房间”；刷新或服务重启后同一浏览器会恢复原座位。关闭控制台或 Ctrl+C 停止服务。
+## 可以玩什么
 
-从源码构建需要 Go 1.25+：
-
-```powershell
-powershell -File scripts/build.ps1
-.\Start-Viticulture.cmd
-```
-
-也可直接运行：
-
-```powershell
-go run ./cmd/viticulture -addr 127.0.0.1:3013 -data ./runtime/ee-data
-```
-
-局域网监听使用 `-addr 0.0.0.0:3013`。同一个存档目录只能由一个进程使用。运行数据包含手牌和会话凭据，不纳入 Git；该程序面向可信局域网。
-
-## 工程导航
-
-| 路径 | 职责 |
+| 内容 | 支持情况 |
 | --- | --- |
-| cmd/viticulture | 程序入口 |
-| internal/game | 游戏规则、卡库、访客状态机及领域测试 |
-| internal/server | HTTP、会话、SSE 与应用事务 |
-| internal/store | JSON 快照存储 |
-| web/static | 原生前端与本地 SVG；通过 web/embed.go 内嵌 |
-| tests | 浏览器回归与 Windows 原生验证 |
-| scripts | 构建、检查脚本 |
-| docs | 架构、API、规则核对、UI 检查及历史记录 |
-| dist / artifacts / runtime | 被忽略的构建、证据和存档目录 |
+| Essential Edition | 2–6 人、76 张访客、有限牌库、独立手牌及本地存档 |
+| Tuscany Essential | 四季主板、个人过季、影响力；可选 36 张建筑、11 类特殊工人 |
+| Moor Visitors | 40 张访客加入本体牌库 |
+| Visit from the Rhine Valley | 80 张替换访客；EE 主板过滤 4 张依赖 Tuscany 的牌，不与 EE/Moor 混洗 |
+| 玩家身份 | 房间座位密码、改密、退出和会话撤销，不能仅凭同名认领他人座位 |
+| 操作与帮助 | 棋盘内卡片操作面板、悬停/聚焦提示、种植条件检查、规则速查和可关闭的新手引导 |
 
-阅读 [架构说明](docs/architecture.md)、[当前 API](docs/api.md)、[规则核对与未决边界](docs/rules-review.md)、[UI 改动](docs/ui-review.md)、[构建与测试](docs/testing.md)。
+未选扩展不会出现在游戏内操作、规则和引导中。World、Bordeaux、旧 Tuscany 额外模块和 Automa 不在当前范围。
 
-## 验证
+## 快速开始
+
+### Windows
+
+从源码构建需要 **Go 1.25+**。在项目根目录执行：
 
 ```powershell
-powershell -File scripts/check.ps1
+powershell -NoProfile -File scripts/build-continuation.ps1
+.\Start-Viticulture-Continuation.cmd
+```
+
+已有本轮构建时，直接双击 `Start-Viticulture-Continuation.cmd`。
+
+1. 房主打开 `http://localhost:3015`，填写昵称和座位密码，创建房间。
+2. 朋友打开 `http://房主局域网IP:3015`，输入房间码、自己的昵称和密码加入。
+3. 房主选择扩展后开始；配置在开局后锁定。回到已有座位需提供该房间的原昵称与密码。
+
+存档位于 `runtime/continuation-data`。关闭启动窗口或按 Ctrl+C 停止服务器；同一存档目录只能由一个进程使用。Git 仓库不包含 EXE、真实存档或会话凭据。
+
+### 其他平台 / 直接运行源码
+
+```sh
+go run ./cmd/viticulture -addr 0.0.0.0:3015 -data ./runtime/continuation-data
+```
+
+旧启动器保留兼容用途，不会自动升级旧 EXE 或迁移旧对局。版本切换与旧座位首次设密见 [运行指南](docs/guides/running.md)。需要临时公网链接时，按 [Cloudflare 分享指南](docs/guides/cloudflare.md) 显式启用。
+
+## 文档与版本
+
+版本按真实 Git 提交归档，每版都有 **开发记录、验证记录、Release Notes**。目录编号仅用于排序，不代表新增的发行标签。
+
+- [文档与版本索引](docs/README.md)
+- [当前功能版本：扩展、密码与界面完善 · 563db1b](docs/versions/06-expansions-563db1b/release-notes.md)
+- [架构与职责](docs/guides/architecture.md) · [HTTP API](docs/guides/api.md) · [构建与测试](docs/guides/testing.md)
+
+`563db1b` 的完整验收为 12/12 步通过，含 24 配置、24 自然终局、36 建筑夹具和代表性复杂交互；两份独立功能复审及工程审查已完成，GitHub CI（含 race）通过。自然局策略不打访客，不能当作所有卡牌组合的证明，具体范围见 [该版验证记录](docs/versions/06-expansions-563db1b/validation.md)。
+
+## 开发
+
+```sh
+go test -tags "ee_rule_audit audit_diff" ./...
+go vet ./...
 npm ci
 npx playwright install chromium
+npm run test:units
+npm run format:check
 npm run test:ui
-npm run test:game
 ```
 
-Node 依赖仅用于开发。其他专项、截图位置和本次测试结果见 [testing.md](docs/testing.md)。GitHub Actions 配置了 Go（含 race）和浏览器检查。
+Node.js 22+ 仅用于开发验证。Windows 也可用 `scripts/check.ps1` 执行 Go 审计、vet 和 gofmt 检查；完整扩展浏览器验收需 Windows Edge，见 [测试指南](docs/guides/testing.md)。
 
-## 实现范围
+```text
+cmd/viticulture/   程序入口
+internal/game/    游戏规则、牌库与领域测试
+internal/server/  密码、HTTP、玩家视角和实时同步
+internal/store/   存档读写
+internal/sharing/ 可选公网分享
+web/static/       原生前端和本地素材
+tests/            浏览器与原生验证
+docs/             当前指南、版本记录和文档素材
+```
 
-非官方游戏实现。续作范围为 EE、Tuscany Essential 四季主板与影响力、36 张建筑卡、11 种特殊工人、Moor 40 张访客与 Rhine 80 张替换访客；不含 World、Bordeaux、旧版额外模块或 Automa。具体可用状态以最新交付记录为准。未启用的模块不出现在游戏内操作、规则与引导中。
+## Buy me a HEYTEA
 
-旧版本的记录保留在 docs/history，旧启动器保留兼容用途。旧 exe 和研究副本不随源码仓库分发。参考来源见 [规则核对](docs/rules-review.md)；未擅自为已有项目内容添加新的开源授权。
+如果这个项目让你和朋友玩得开心，欢迎微信扫码，请我喝杯喜茶 🍵
 
-## 可选临时公网分享
+<img src="docs/assets/buy-me-a-heytea-wechat.png" alt="微信赞助收款二维码" width="270" height="270">
 
-默认仍为可信局域网；Cloudflare Quick Tunnel 需明确启用。双击启动器，回车默认局域网，输入 `2` 或 `y` 开启公网。安装、口令、安全边界与测试结果见 [Cloudflare 分享说明](docs/cloudflare.md)。已用真实公网及 Windows Edge 双浏览器验证登录、加入、开局、轮询与重连，并验证 Windows 父进程退出时回收隧道；不是新一轮完整游戏规则验收。
+扫码后可在微信中选择预设金额，感谢支持。[赞助码与预设金额的维护说明](docs/guides/support.md)
+
+## 关于本项目
+
+这是 Viticulture 的非官方实现，与游戏出版方无隶属关系。规则核对来源和解释边界保留在各版记录中；参考实现未作为商业卡图的再分发授权。仓库目前没有添加开源许可证，公开可读不等于取得再分发许可。
