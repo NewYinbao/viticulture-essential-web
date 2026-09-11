@@ -47,3 +47,5 @@ essential-web/
 本次没有引入多 module、通用仓库接口、数据库或前端框架。今后更值得优先处理的是访客定义的统一数据约束和罕见组合裁定；只有出现真实部署／并发需求时，再考虑持久化或房间锁粒度的变化。
 
 前端公共行动统一由 `action-panel.js` 管理草稿、卡片选择和提交，`action-options.js` 提供格位与配方预览。`card-art.js` 由手牌与行动面板共享；`hints.js` 处理悬停／聚焦提示及局部边界。`app.js` 负责打开／关闭面板和 revision 失效处理，避免两套行动表单重复维护。
+
+规则内容位于 `rules-content.js`，界面导览和本地偏好由 `help.js` 管理；两者不调用游戏行动 API。建筑速查与建造卡共用 `building-catalog.js`，种植面板与随局提示共用 `action-options.js` 的完整种植条件检查。

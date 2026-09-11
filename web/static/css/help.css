@@ -1,0 +1,350 @@
+.learning-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.entry .learning-tools button {
+  width: auto;
+  margin: 0;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+.welcome-guide {
+  font-size: 12px;
+  color: #597447;
+}
+.table-nav button {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 10px 16px;
+  min-height: 0;
+  font-size: 13px;
+  color: var(--green);
+}
+[data-guide-toggle][aria-pressed='true'] {
+  background: #e2e8cc;
+  color: #3e633c;
+  box-shadow: inset 0 0 0 1px #8b9a62;
+}
+.rules-help {
+  scroll-margin-top: 75px;
+  margin-bottom: 18px;
+  background: #fbf7e9;
+}
+.help-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.help-heading h3 {
+  margin: 0;
+  font-size: 21px;
+}
+.help-close {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+.rule-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.rule-topics button {
+  font-size: 12px;
+  padding: 7px 12px;
+  min-height: 36px;
+}
+.rule-topics [aria-pressed='true'] {
+  color: #fff9e9;
+  background: #4b6442;
+  border-color: #4b6442;
+}
+.rule-intro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 12px 0;
+}
+.rule-intro p {
+  margin: 0;
+  font-size: 14px;
+  color: #60704f;
+}
+.rule-art {
+  width: 70px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.rule-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.rule-cards article {
+  padding: 12px 15px;
+  border: 1px solid #d2c9ab;
+  background: #fffcef;
+  border-radius: 8px;
+}
+.rule-cards h4 {
+  margin: 0 0 5px;
+  font-size: 14px;
+  color: #725935;
+}
+.rule-cards p {
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.7;
+}
+.help-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 11px;
+}
+.help-foot a {
+  margin-left: 10px;
+  color: var(--green);
+}
+.help-foot button {
+  font-size: 12px;
+}
+.beginner-guide {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: #eef1df;
+  border: 1px solid #aab484;
+  border-left: 4px solid #8b9659;
+  border-radius: 10px;
+}
+.guide-copy {
+  flex: 1;
+  min-width: 180px;
+}
+.guide-copy small {
+  font-size: 10px;
+  color: #818652;
+}
+.guide-copy h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.guide-copy p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #617052;
+}
+.guide-controls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.guide-controls button {
+  padding: 7px 10px;
+  min-height: 36px;
+  font-size: 11px;
+}
+.guide-controls [data-guide-next],
+.guide-controls [data-guide-locate] {
+  border-color: #8d9d6a;
+  background: #e0e7cd;
+}
+.guide-target {
+  outline: 3px solid #ac853e !important;
+  outline-offset: 4px;
+}
+.action-lesson {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-bottom: 1px dashed #c6cbae;
+  color: #617449;
+  background: #f3f4e6;
+  font-size: 11px;
+}
+.action-lesson span {
+  flex: 1;
+}
+.action-lesson button {
+  background: transparent;
+  font-size: 11px;
+  padding: 2px 7px;
+  min-height: 30px;
+}
+.space.inspectable,
+.action-choice.inspectable {
+  cursor: pointer;
+}
+.space.inspectable .availability-badge {
+  background: #81704a;
+}
+.space.inspectable:hover,
+.action-choice.inspectable:hover {
+  border-color: #947943;
+  background: #f2eddb;
+}
+.action-choice[data-inspected='true']:not([aria-pressed='true']) {
+  outline: 2px solid #a9894e;
+  outline-offset: 1px;
+}
+.vine-checks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  font-size: 10px;
+}
+.vine-checks > span {
+  border-radius: 5px;
+  padding: 2px 5px;
+}
+.vine-checks .met {
+  color: #557041;
+  background: #e4ecd6;
+}
+.vine-checks .missing {
+  color: #8a592c;
+  background: #f0e2c7;
+}
+.vine-inspection {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #f4edd9;
+  border: 1px solid #c5b27a;
+  border-radius: 8px;
+}
+.vine-inspection .section-head {
+  margin: 0 0 6px;
+  gap: 8px;
+}
+.vine-inspection h4 {
+  font-size: 12px;
+  margin: 0;
+}
+.vine-inspection button {
+  background: transparent;
+  padding: 3px 8px;
+  min-height: 30px;
+  font-size: 10px;
+}
+.vine-inspection .vine-checks {
+  justify-content: flex-start;
+}
+.vine-inspection p {
+  font-size: 11px;
+  margin: 7px 0;
+}
+.vine-field-checks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  font-size: 10px;
+}
+.vine-field-checks > span {
+  padding: 5px;
+  border: 1px solid #ccc3a6;
+  background: #faf6e7;
+  border-radius: 5px;
+}
+.vine-field-checks .met {
+  color: #547245;
+}
+.vine-field-checks .missing {
+  color: #8a592c;
+}
+.plant-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 20px 10px;
+  background: #f3eddc;
+  border: 1px dashed #b4af94;
+  border-radius: 8px;
+}
+.plant-empty strong {
+  font-size: 13px;
+}
+.plant-empty span {
+  font-size: 12px;
+  color: #7e785e;
+}
+@media (max-width: 760px) {
+  .table-nav {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .table-nav a,
+  .table-nav button {
+    white-space: nowrap;
+    font-size: 11px;
+    padding: 10px 0;
+  }
+  .rules-help {
+    padding: 12px;
+    scroll-margin-top: 8px;
+  }
+  .help-heading h3 {
+    font-size: 18px;
+  }
+  .rule-topics {
+    gap: 5px;
+  }
+  .rule-topics button {
+    flex: 1 0 21%;
+    font-size: 11px;
+    padding: 6px 5px;
+  }
+  .rule-cards {
+    grid-template-columns: 1fr;
+  }
+  .rule-cards article {
+    padding: 10px 12px;
+  }
+  .rule-intro {
+    gap: 9px;
+  }
+  .rule-intro p {
+    font-size: 12px;
+  }
+  .beginner-guide {
+    padding: 10px 12px;
+  }
+  .guide-controls {
+    width: 100%;
+  }
+  .guide-controls button {
+    flex: 1;
+  }
+  .vine-inspection {
+    padding: 8px;
+  }
+  .vine-field-checks {
+    grid-template-columns: 1fr;
+  }
+}
+body[data-season='lobby'] .table-nav {
+  display: flex;
+  position: static;
+}
+body[data-season='lobby'] .table-nav a {
+  display: none;
+}

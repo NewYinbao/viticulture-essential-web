@@ -1,7 +1,15 @@
+import { buildings } from './building-catalog.js';
 import { localCard } from './card-i18n.js';
 import { cardArt } from './card-art.js';
 import { art, worker, actionArt } from './graphics.js';
-import { defaultLarge, privateSpace, freeSlots, hasBonus, winePreview } from './action-options.js';
+import {
+  defaultLarge,
+  privateSpace,
+  freeSlots,
+  hasBonus,
+  winePreview,
+  vineRequirements,
+} from './action-options.js';
 import { hint } from './hints.js';
 
 const node = (tag, text, cls) => {
@@ -11,22 +19,6 @@ const node = (tag, text, cls) => {
   return e;
 };
 const names = { red: '红', white: '白', blush: '桃红', sparkling: '起泡' };
-const buildings = [
-  ['trellis', '棚架', 2, 'trellis', '允许种植需要棚架的葡萄藤。'],
-  ['irrigation', '灌溉', 3, 'irrigation', '允许种植需要灌溉的葡萄藤。'],
-  ['yoke', '轭', 2, 'field', '每年可派工一次：收获一块田地，或拔一张藤回手牌。'],
-  ['medium_cellar', '中酒窖', 4, 'cellar', '可储存品质 4–6 的酒；解锁桃红酒（品质至少 4）。'],
-  [
-    'large_cellar',
-    '大酒窖',
-    6,
-    'cellar',
-    '可储存品质 7–9 的酒；解锁起泡酒（品质至少 7）。需先有中酒窖。',
-  ],
-  ['cottage', '小屋', 4, 'cottage', '每年秋季额外抽一张自选颜色的访客牌。'],
-  ['windmill', '磨坊', 5, 'windmill', '种植葡萄藤时获得 1 分，每年最多触发一次。'],
-  ['tasting_room', '品酒室', 6, 'estate', '拥有酒时，导览额外获得 1 分，每年最多触发一次。'],
-];
 const bonusLabels = {
   draw_vine: '+1 葡萄藤',
   draw_order: '+1 订单',
@@ -53,6 +45,7 @@ export function closeActionPanel({ restoreFocus = true } = {}) {
   document.querySelector('#pass').hidden = false;
   document.querySelector('.table-nav a').href = '#action-area';
   document.dispatchEvent(new Event('action-panel-close'));
+  document.dispatchEvent(new CustomEvent('action-panel-state', { detail: null }));
   if (restoreFocus) document.querySelector(trigger)?.focus({ preventScroll: true });
 }
 document.addEventListener('keydown', (event) => {
@@ -136,6 +129,7 @@ export function openActionPanel(space, view, act) {
     cards: [],
     fields: [],
     plantFields: {},
+    inspectVine: '',
     grapes: [],
     wines: [],
     bottle: 1,
@@ -194,12 +188,27 @@ export function openActionPanel(space, view, act) {
       !!options.reason,
     );
     button.onclick = () => {
-      if (options.reason || session.sending) return;
+      if (session.sending) return;
+      if (options.reason) {
+        if (options.inspect) {
+          options.inspect();
+          redraw({ name, value: String(value) });
+          const info = panel.querySelector('#vine-inspection');
+          info?.scrollIntoView({ block: 'nearest' });
+          info?.focus({ preventScroll: true });
+        }
+        return;
+      }
       error.textContent = '';
       if (options.change) options.change();
       else draft[name] = value;
       redraw({ name, value: String(value) });
     };
+    if (options.inspect && options.reason) {
+      button.setAttribute('aria-disabled', 'false');
+      button.classList.add('inspectable');
+      button.setAttribute('aria-label', label + ' · 查看种植条件');
+    }
     grid.append(button);
     return button;
   };
@@ -213,14 +222,7 @@ export function openActionPanel(space, view, act) {
         const c = view.hand.find((c) => c.id === id);
         return sum + c.red + c.white;
       }, 0);
-  const vineReason = (c) =>
-    c.trellis && !p.buildings.includes('trellis')
-      ? '需要棚架'
-      : c.irrigation && !p.buildings.includes('irrigation')
-        ? '需要灌溉'
-        : !p.fields.some((f) => !f.sold && fieldLoad(f) + c.red + c.white <= f.capacity)
-          ? '田地容量不足'
-          : '';
+  const vineReason = (c) => vineRequirements(p, c).reason;
   const buildingReason = ([id, , cost]) =>
     p.buildings.includes(id)
       ? '已建造'
@@ -287,6 +289,8 @@ export function openActionPanel(space, view, act) {
     });
   function invalid() {
     if (wake) return '';
+    if (!view.legal.canPlace) return '等待你的行动回合';
+    if (!p.workers && !p.largeWorker) return '没有待命工人，仅查看条件';
     if (
       draft.worker === 'normal' &&
       (!p.workers || (!privateSpace(space) && !freeSlots(space).length))
@@ -312,11 +316,19 @@ export function openActionPanel(space, view, act) {
       }
     }
     if (kind() === 'plant') {
-      if (!draft.cards.length) return '选择葡萄藤';
+      if (!draft.cards.length) {
+        const vines = view.hand.filter((c) => c.type === 'vine');
+        return !vines.length
+          ? '没有葡萄藤手牌'
+          : vines.some((c) => !vineReason(c))
+            ? '选择葡萄藤'
+            : '暂无可种植的藤，点卡查看条件';
+      }
       if (draft.cards.length > limit()) return '本次最多种 ' + limit() + ' 张藤';
       for (const id of draft.cards) {
         const card = view.hand.find((c) => c.id === id);
         const field = p.fields.find((f) => f.index === draft.plantFields[id]);
+        if (vineReason(card)) return vineReason(card);
         if (!field) return '为葡萄藤选择田地';
         if (plantRoom(field, card) < card.red + card.white) return '田地总容量不足';
       }
@@ -464,14 +476,102 @@ export function openActionPanel(space, view, act) {
         }
       } else if (kind() === 'plant') {
         const grid = group('选择葡萄藤 · 最多 ' + limit() + ' 张');
-        for (const c of view.hand.filter((c) => c.type === 'vine'))
-          cardChoice(grid, 'cards', c, {
-            reason: vineReason(c),
+        const vines = view.hand.filter((c) => c.type === 'vine');
+        if (!vines.length) {
+          const empty = node('div', null, 'plant-empty');
+          empty.append(
+            art('vine', 'resource-art'),
+            node('strong', '还没有葡萄藤手牌'),
+            node('span', '先去葡萄藤市场抽牌，再来查看种植条件。'),
+          );
+          grid.append(empty);
+        }
+        for (const c of vines) {
+          const requirements = vineRequirements(p, c);
+          const button = cardChoice(grid, 'cards', c, {
+            reason: requirements.reason,
             selected: draft.cards.includes(c.id),
+            inspect: () => {
+              draft.inspectVine = c.id;
+            },
             change: () => {
               draft.cards = toggle(draft.cards, c.id);
+              draft.inspectVine = c.id;
             },
           });
+          const badges = node('span', null, 'vine-checks');
+          for (const check of requirements.checks.filter((c) => c.needed))
+            badges.append(
+              node(
+                'span',
+                check.label.startsWith('田地容量')
+                  ? check.met
+                    ? '✓ 容量 ' + requirements.value
+                    : '容量不足'
+                  : (check.met ? '✓ ' : '缺 ') + check.label,
+                check.met ? 'met' : 'missing',
+              ),
+            );
+          button.append(badges);
+          if (draft.inspectVine === c.id) button.dataset.inspected = 'true';
+        }
+        if (draft.inspectVine) {
+          const card = vines.find((c) => c.id === draft.inspectVine),
+            requirements = vineRequirements(p, card);
+          const info = node('section', null, 'vine-inspection');
+          info.id = 'vine-inspection';
+          info.tabIndex = -1;
+          info.setAttribute('aria-label', '葡萄藤种植条件');
+          const heading = node('div', null, 'section-head');
+          heading.append(node('h4', localCard(card).name + ' · 种植条件'));
+          const rules = node('button', '种植规则 ↗');
+          rules.type = 'button';
+          rules.dataset.ruleTopic = 'planting';
+          heading.append(rules);
+          info.append(heading);
+          const structures = node('div', null, 'vine-checks');
+          for (const check of requirements.checks.slice(0, 2))
+            structures.append(
+              node(
+                'span',
+                check.label + ' · ' + (!check.needed ? '无需' : check.met ? '✓ 已有' : '缺少'),
+                check.met ? 'met' : 'missing',
+              ),
+            );
+          info.append(
+            structures,
+            node(
+              'p',
+              '这张藤占用 ' +
+                requirements.value +
+                ' 容量（红 ' +
+                card.red +
+                ' + 白 ' +
+                card.white +
+                '）',
+            ),
+          );
+          const fields = node('div', null, 'vine-field-checks');
+          for (const f of requirements.fields)
+            fields.append(
+              node(
+                'span',
+                '田地 ' +
+                  (f.index + 1) +
+                  ' · ' +
+                  (f.sold
+                    ? '已出售'
+                    : '空余 ' +
+                      f.free +
+                      (f.free >= requirements.value
+                        ? ' ✓'
+                        : ' · 差 ' + (requirements.value - f.free))),
+                !f.sold && f.free >= requirements.value ? 'met' : 'missing',
+              ),
+            );
+          info.append(fields);
+          content.append(info);
+        }
         for (const id of draft.cards) {
           const c = view.hand.find((c) => c.id === id),
             fields = group(localCard(c).name + ' → 田地', true);
@@ -560,6 +660,11 @@ export function openActionPanel(space, view, act) {
     readiness.textContent = reason || '✓ 已就绪';
     readiness.classList.toggle('ready', !reason);
     send.disabled = !!reason || session.sending;
+    document.dispatchEvent(
+      new CustomEvent('action-panel-state', {
+        detail: { space: wake ? 'wake' : space.id, reason },
+      }),
+    );
     if (focus)
       [...content.querySelectorAll('[data-group]')]
         .find((e) => e.dataset.group === focus.name && e.dataset.value === focus.value)

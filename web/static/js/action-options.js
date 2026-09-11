@@ -80,3 +80,45 @@ export function winePreview(player, recipes) {
     return prefix + names[type] + ` · 品质 ${value}` + (value < raw ? '（按酒窖／占位降级）' : '');
   });
 }
+
+// Planting requirements are shown together, including every missing structure.
+export function vineRequirements(player, card) {
+  const value = card.red + card.white;
+  const fields = player.fields.map((field) => ({
+    index: field.index,
+    free: field.capacity - field.vines.reduce((sum, vine) => sum + vine.red + vine.white, 0),
+    sold: field.sold,
+  }));
+  const checks = [
+    {
+      label: '棚架',
+      needed: card.trellis,
+      met: !card.trellis || player.buildings.includes('trellis'),
+    },
+    {
+      label: '灌溉',
+      needed: card.irrigation,
+      met: !card.irrigation || player.buildings.includes('irrigation'),
+    },
+    {
+      label: '田地容量 ≥' + value,
+      needed: true,
+      met: fields.some((f) => !f.sold && f.free >= value),
+    },
+  ];
+  return {
+    value,
+    fields,
+    checks,
+    reason: checks
+      .filter((c) => !c.met)
+      .map((c) =>
+        c.label === '棚架' || c.label === '灌溉'
+          ? '缺少' + c.label
+          : fields.every((f) => f.sold)
+            ? '田地均已出售'
+            : '田地容量不足',
+      )
+      .join('；'),
+  };
+}

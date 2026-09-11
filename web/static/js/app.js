@@ -1,3 +1,4 @@
+import { initHelp, renderHelp } from './help.js';
 import { openActionPanel, closeActionPanel, hasActionPanel } from './action-panel.js';
 import { actionReason } from './action-options.js';
 import { hint, installHints } from './hints.js';
@@ -6,6 +7,7 @@ import { renderEE, cardArt, setupEE } from './ee-ui.js';
 import { art, worker, decorateTable, renderEstate, actionArt } from './graphics.js';
 const $ = (s) => document.querySelector(s);
 installHints();
+initHelp();
 const el = (tag, text, cls) => {
   const e = document.createElement(tag);
   if (text != null) e.textContent = text;
@@ -186,9 +188,26 @@ function render(v) {
     const reason = actionReason(s, v);
     b.disabled = !v.legal.canPlace || !online;
     const ready = v.legal.canPlace && online && !reason;
+    const inspectable = s.id === 'plant' && v.legal.canPlace && online && !!reason;
     b.classList.toggle('action-ready', ready);
-    b.append(el('span', reason ? '条件不足' : ready ? '可派遣' : '等待', 'availability-badge'));
-    hint(b, reason || (ready ? '选择工人与资源' : '等待你的行动回合'), !!reason);
+    b.append(
+      el(
+        'span',
+        inspectable ? '查看条件' : reason ? '条件不足' : ready ? '可派遣' : '等待',
+        'availability-badge',
+      ),
+    );
+    hint(
+      b,
+      inspectable
+        ? reason + '，点击查看每张藤的条件'
+        : reason || (ready ? '选择工人与资源' : '等待你的行动回合'),
+      !!reason,
+    );
+    if (inspectable) {
+      b.classList.add('inspectable');
+      b.setAttribute('aria-disabled', 'false');
+    }
     const cardType = {
       plant: 'vine',
       fill_order: 'order',
@@ -209,7 +228,7 @@ function render(v) {
     b.onfocus = () => focusCards(true);
     b.onblur = () => focusCards(false);
     b.onclick = () => {
-      if (ready) openAction(s);
+      if (ready || inspectable) openAction(s);
     };
     board.append(b);
   }
@@ -290,6 +309,7 @@ function render(v) {
   logs.replaceChildren(...[...(v.log || [])].reverse().map((s) => el('li', s)));
   $('#rules-text').replaceChildren(...v.rulesNotes.map((n) => el('p', n)));
   renderEE(v, act, online);
+  renderHelp(v, online);
   if (focusedCard) {
     const card = [...hand.children].find((e) => e.dataset.cardId === focusedCard);
     if (card?.tabIndex === 0) card.focus({ preventScroll: true });
@@ -392,6 +412,7 @@ $('#switch-table').onclick = () => {
   $('#welcome').hidden = false;
   $('#game').hidden = true;
   setConnection('已返回入口');
+  renderHelp(null, false);
 };
 $('#invite').onclick = async () => {
   const u = new URL(location.href);
