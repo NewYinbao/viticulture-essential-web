@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/css/style.css" />
     <link rel="stylesheet" href="/css/ee-style.css" />
     <link rel="stylesheet" href="/css/usability.css" />
+    <link rel="stylesheet" href="/css/action-panel.css" />
     <script type="module" src="/js/app.js"></script>
   </head>
   <body>
@@ -145,22 +146,6 @@
         本地运行 · 独立玩家视角 · 无第三方脚本 / 字体 / 图片<br />请勿将服务映射到公网。规则与原版差异见上方说明。
       </footer>
     </main>
-    <dialog id="action-dialog">
-      <form id="action-form">
-        <div id="action-illustration"></div>
-        <div class="section-head">
-          <h2 id="action-title"></h2>
-          <button id="close-dialog" type="button" aria-label="关闭">×</button>
-        </div>
-        <p id="action-description" class="muted"></p>
-        <div id="action-fields"></div>
-        <label class="check"
-          ><input type="checkbox" id="use-large" />使用大工人（普通行动格已满时也可进入）</label
-        >
-        <p id="form-error" role="alert"></p>
-        <button class="primary" id="confirm-action" type="submit">确认派遣</button>
-      </form>
-    </dialog>
     <div id="toast" role="status" hidden></div>
   </body>
 </html>

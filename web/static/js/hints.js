@@ -22,6 +22,12 @@ export function installHints() {
   const show = (target) => {
     const next = target?.closest?.('[data-hint]');
     if (!next || !next.dataset.hint) return hide();
+    const scroller = next.closest('.action-panel form > div:first-child');
+    if (scroller) {
+      const area = scroller.getBoundingClientRect(),
+        target = next.getBoundingClientRect();
+      if (target.bottom <= area.top || target.top >= area.bottom) return hide();
+    }
     if (owner && owner !== next) owner.removeAttribute('aria-describedby');
     owner = next;
     bubble.textContent = next.dataset.hint;
@@ -30,14 +36,24 @@ export function installHints() {
     // A dialog's top layer also needs to contain its tooltip.
     const container = next.closest('dialog') || document.body;
     if (bubble.parentElement !== container) container.append(bubble);
+    const bounds = next.closest('.action-panel')?.getBoundingClientRect();
+    bubble.style.maxWidth = bounds ? Math.min(290, bounds.width - 24) + 'px' : '';
     const box = next.getBoundingClientRect(),
       width = bubble.offsetWidth,
       height = bubble.offsetHeight;
-    bubble.style.left = Math.max(8, Math.min(innerWidth - width - 8, box.left)) + 'px';
+    const left = Math.max(8, bounds ? bounds.left + 8 : 8);
+    const right = Math.min(innerWidth - 8, bounds ? bounds.right - 8 : innerWidth - 8);
+    const top = Math.max(8, bounds ? bounds.top + 8 : 8);
+    const bottom = Math.min(innerHeight - 8, bounds ? bounds.bottom - 8 : innerHeight - 8);
+    bubble.style.left = Math.max(left, Math.min(right - width, box.left)) + 'px';
     bubble.style.top =
-      (box.bottom + height + 16 < innerHeight
-        ? box.bottom + 8
-        : Math.max(8, box.top - height - 8)) + 'px';
+      Math.max(
+        top,
+        Math.min(
+          bottom - height,
+          box.bottom + height + 8 < bottom ? box.bottom + 8 : box.top - height - 8,
+        ),
+      ) + 'px';
   };
   document.addEventListener('pointerover', (e) => show(e.target));
   document.addEventListener('focusin', (e) => show(e.target));
@@ -51,8 +67,20 @@ export function installHints() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hide();
   });
-  document.addEventListener('scroll', hide, true);
+  document.addEventListener(
+    'scroll',
+    () => {
+      const focused = owner === document.activeElement ? owner : null;
+      hide();
+      if (focused)
+        requestAnimationFrame(() => {
+          if (focused === document.activeElement) show(focused);
+        });
+    },
+    true,
+  );
   document.addEventListener('close', hide, true);
+  document.addEventListener('action-panel-close', hide);
 }
 
 // Necessary resource counts only; effects can have special sequencing/discounts.

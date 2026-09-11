@@ -81,10 +81,6 @@
 .ee-buttons .primary {
   flex: 1;
 }
-dialog {
-  overflow: auto;
-  overscroll-behavior: contain;
-}
 body[data-season='lobby'] #season-track,
 body[data-season='lobby'] .table-nav,
 body[data-season='lobby'] .play-layout {
@@ -131,10 +127,6 @@ body[data-season='lobby'] .play-layout {
   .ee-choice {
     padding: 12px;
     margin-bottom: 12px;
-  }
-  #ee-action-dialog {
-    padding: 18px;
-    width: calc(100vw - 20px);
   }
   .ee-buttons {
     bottom: -18px;

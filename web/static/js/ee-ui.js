@@ -1,4 +1,6 @@
-export { setupEE } from './action-dialog.js';
+import { cardArt } from './card-art.js';
+export { cardArt } from './card-art.js';
+export { openActionPanel as setupEE } from './action-panel.js';
 import { renderVisitor } from './visitor-ui.js';
 import { localCard } from './card-i18n.js';
 const $ = (s) => document.querySelector(s);
@@ -31,20 +33,6 @@ const gifts = {
   worker: '额外工人',
   vp: '1 胜利分',
 };
-export function cardArt(c, cls = '') {
-  const e = n('img', null, cls);
-  const k = parseInt(c.id?.split('-').pop() || '1', 10) || 1;
-  e.src =
-    '/art/handdrawn/' +
-    (['summer', 'winter', 'mama', 'papa'].includes(c.type)
-      ? 'portrait-' + ((k - 1) % 12)
-      : c.type === 'vine'
-        ? 'vine-' + ((k - 1) % 4)
-        : 'order') +
-    '.svg';
-  e.alt = '原创手绘风格插画（部分卡牌共享主题图）';
-  return e;
-}
 function panel() {
   let e = $('#ee-choice');
   if (!e) {

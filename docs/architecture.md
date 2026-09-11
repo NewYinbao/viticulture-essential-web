@@ -26,7 +26,7 @@ essential-web/
 │   ├── embed.go                  # 将 static 内嵌到程序
 │   └── static/
 │       ├── index.html
-│       ├── js/                   # 主视图、行动表单、访客、图形、翻译
+│       ├── js/                   # 主视图、棋盘内行动卡片、访客、图形、翻译
 │       ├── css/
 │       └── art/                  # 原有本地 SVG
 ├── tests/e2e/                    # 真实 Chromium / HTTP / SSE 验证
@@ -45,3 +45,5 @@ essential-web/
 拆分保留原有存档文件名、JSON 字段和 API 路径。新增 handCounts 属于视图数据。不会修复旧存档中已经发生的错误资源；新启动器使用独立目录便于验收。
 
 本次没有引入多 module、通用仓库接口、数据库或前端框架。今后更值得优先处理的是访客定义的统一数据约束和罕见组合裁定；只有出现真实部署／并发需求时，再考虑持久化或房间锁粒度的变化。
+
+前端公共行动统一由 `action-panel.js` 管理草稿、卡片选择和提交，`action-options.js` 提供格位与配方预览。`card-art.js` 由手牌与行动面板共享；`hints.js` 处理悬停／聚焦提示及局部边界。`app.js` 负责打开／关闭面板和 revision 失效处理，避免两套行动表单重复维护。

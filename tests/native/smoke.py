@@ -14,7 +14,7 @@ def main():
     if os.name != "nt":
         raise SystemExit("Run with native Windows Python, not WSL Python")
     root = Path(__file__).resolve().parents[2]
-    exe = root / "dist" / "Viticulture.exe"
+    exe = Path(os.environ.get("VITICULTURE_EXE", str(root / "dist" / "Viticulture.exe")))
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
@@ -59,6 +59,8 @@ def main():
             with http.open(base + "/", timeout=3) as response:
                 assert response.status == 200
                 assert b"<html" in response.read().lower()
+            with http.open(base + "/js/action-panel.js", timeout=3) as response:
+                assert b"export function openActionPanel" in response.read()
             try:
                 api("/api/state")
                 raise AssertionError("Unauthenticated state was accepted")

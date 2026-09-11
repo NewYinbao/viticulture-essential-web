@@ -1,4 +1,5 @@
-import { actionReason, defaultLarge, privateSpace, hasBonus } from './action-options.js';
+import { openActionPanel, closeActionPanel, hasActionPanel } from './action-panel.js';
+import { actionReason } from './action-options.js';
 import { hint, installHints } from './hints.js';
 import { localCard } from './card-i18n.js';
 import { renderEE, cardArt, setupEE } from './ee-ui.js';
@@ -44,7 +45,6 @@ const phases = {
 let token = localStorage.getItem('vineyard-ee-token') || '',
   state = null,
   source = null,
-  selected = null,
   busy = false,
   online = false;
 let handFilter = 'all';
@@ -75,17 +75,6 @@ async function api(path, body) {
 function setConnection(text) {
   $('#connection').textContent = text;
 }
-function cardText(original) {
-  const c = localCard(original);
-  let t = c.name + ' / ' + c.englishName;
-  if (c.type === 'vine') t += ` / 红${c.red} 白${c.white}`;
-  if (c.type === 'order')
-    t +=
-      ' / ' +
-      (c.requirements || []).map((w) => `${types[w.type]}酒≥${w.value}`).join(' + ') +
-      ` → ${c.points}分`;
-  return t;
-}
 function myPlayer() {
   return state.players.find((p) => p.id === state.youId);
 }
@@ -94,9 +83,8 @@ function playerName(id) {
 }
 function render(v) {
   if (state && v.revision !== state.revision && !busy) {
-    const dialogs = [...document.querySelectorAll('dialog[open]')];
-    if (dialogs.length) {
-      dialogs.forEach((d) => d.close());
+    if (hasActionPanel()) {
+      closeActionPanel({ restoreFocus: false });
       toast('局面已更新，请重新选择行动。');
     }
   }
@@ -364,11 +352,12 @@ async function act(a) {
     return true;
   } catch (e) {
     toast(e.message);
-    $('#form-error').textContent = e.message;
+    const error = $('#action-error');
+    if (error) error.textContent = e.message;
     if (e.status === 409) {
       try {
         const latest = await api('/api/state');
-        document.querySelectorAll('dialog[open]').forEach((d) => d.close());
+        closeActionPanel({ restoreFocus: false });
         render(latest);
         toast('局面已经变化，已刷新。请按最新局面重新选择。');
       } catch {}
@@ -397,6 +386,7 @@ $('#switch-table').onclick = () => {
   )
     return;
   source?.close();
+  closeActionPanel({ restoreFocus: false });
   $('#resume-room').hidden = !token;
   online = false;
   $('#welcome').hidden = false;
@@ -413,179 +403,9 @@ $('#invite').onclick = async () => {
     prompt('复制邀请链接（如为localhost，请改为服务器局域网IP）', u.href);
   }
 };
-function selectField(parent, name, label, items) {
-  const l = el('label', label),
-    s = el('select');
-  s.name = name;
-  s.required = true;
-  const placeholder = el('option', '请选择');
-  placeholder.value = '';
-  s.append(placeholder);
-  for (const [value, text] of items) {
-    const o = el('option', text);
-    o.value = value;
-    s.append(o);
-  }
-  if (name === 'slot') s.value = '0';
-  if (name === 'declineBonus') s.value = 'no';
-  if (items.length === 1) s.value = items[0][0];
-  l.append(s);
-  parent.append(l);
-  return s;
-}
-function checks(parent, name, label, items) {
-  parent.append(el('p', label));
-  if (!items.length) parent.append(el('p', '暂无可用资源', 'empty'));
-  for (const [value, text] of items) {
-    const l = el('label', null, 'check'),
-      i = el('input');
-    i.type = 'checkbox';
-    i.name = name;
-    i.value = value;
-    l.append(i, document.createTextNode(text));
-    parent.append(l);
-  }
-}
 function openAction(s) {
-  if (['gain_coin', 'yoke', 'plant', 'harvest', 'make_wine', 'sell_grapes'].includes(s.id))
-    return setupEE(s, state, act);
-  selected = { ...s, revision: state.revision };
-  const p = myPlayer();
-  $('#action-illustration').replaceChildren(art(actionArt[s.id] || 'estate', 'dialog-art'));
-  $('#action-title').textContent = s.name;
-  $('#action-description').textContent = s.description;
-  $('#form-error').textContent = '';
-  const f = $('#action-fields');
-  f.replaceChildren();
-  if (s.capacity >= 2 && !privateSpace(s))
-    selectField(f, 'declineBonus', '行动格奖励', [
-      ['no', '领取奖励（如所选格可领取）'],
-      ['yes', '放弃奖励，仍执行行动'],
-    ]);
-  if (s.capacity > 1 && s.capacity < 6)
-    selectField(f, 'slot', '行动格（第1格为奖励格）', [
-      [0, '自动选择'],
-      ...Array.from({ length: s.capacity }, (_, i) => [
-        i + 1,
-        '第' + (i + 1) + '格' + (s.occupied.some((o) => o.slot === i + 1) ? '（已占用）' : ''),
-      ]),
-    ]);
-  $('#use-large').checked = defaultLarge(s, p);
-  $('#use-large').disabled = !p.largeWorker;
-  const t = {
-    plant: 'vine',
-    fill_order: 'order',
-    summer_visitor: 'summer',
-    winter_visitor: 'winter',
-  }[s.id];
-  if (t)
-    selectField(
-      f,
-      'cardId',
-      '选择手牌',
-      state.hand
-        .filter((c) => c.type === t && (!['summer', 'winter'].includes(t) || c.implemented))
-        .map((c) => [c.id, cardText(c)]),
-    );
-  if (['plant', 'harvest'].includes(s.id))
-    selectField(
-      f,
-      'field',
-      '选择田地',
-      p.fields.map((x) => [
-        x.index,
-        `田地 ${x.index + 1} / 容量 ${x.capacity}${x.harvested ? ' / 已收获' : ''}`,
-      ]),
-    );
-  if (s.id === 'build')
-    selectField(
-      f,
-      'building',
-      '选择建筑',
-      Object.entries(buildings).filter(([id]) => !p.buildings.includes(id)),
-    );
-  if (['make_wine', 'sell_grapes'].includes(s.id))
-    checks(
-      f,
-      'grapes',
-      '选择葡萄（每次酿造一瓶）',
-      p.grapes.map((g, i) => [i, `${types[g.color]}葡萄 · 品质 ${g.value}`]),
-    );
-  if (s.id === 'fill_order')
-    checks(
-      f,
-      'wineIds',
-      '选择要交付的葡萄酒',
-      p.wines.map((w) => [w.id, `${types[w.type]}葡萄酒 · 品质 ${w.value}`]),
-    );
-  const cardSelect = f.querySelector('[name=cardId]');
-  if (cardSelect)
-    for (const option of cardSelect.options) {
-      const reason = state.cardReasons?.[option.value];
-      if (reason) {
-        option.disabled = true;
-        option.textContent += ' · ' + reason;
-      }
-    }
-  const slotSelect = f.querySelector('[name=slot]');
-  if (slotSelect)
-    for (const option of slotSelect.options)
-      if (s.occupied.some((o) => o.slot === Number(option.value))) option.disabled = true;
-  const buildSelect = f.querySelector('[name=building]');
-  if (buildSelect) {
-    const updateBuildings = () => {
-      const discount = hasBonus(
-        s,
-        slotSelect?.value,
-        f.querySelector('[name=declineBonus]')?.value === 'yes',
-      )
-        ? 1
-        : 0;
-      for (const option of buildSelect.options) {
-        if (!option.value) continue;
-        const label = buildings[option.value].split(' · ')[0],
-          cost = Number(buildings[option.value].match(/\d+/)[0]) - discount;
-        const reason =
-          option.value === 'large_cellar' && !p.buildings.includes('medium_cellar')
-            ? '需要中酒窖'
-            : p.coins < cost
-              ? `还差 ${cost - p.coins} 金币`
-              : '';
-        option.disabled = !!reason;
-        option.textContent = `${label} · ${cost} 金币${reason ? ' · ' + reason : ''}`;
-      }
-      if (buildSelect.selectedOptions[0]?.disabled) buildSelect.value = '';
-    };
-    f.addEventListener('change', updateBuildings);
-    updateBuildings();
-  }
-  $('#action-dialog').showModal();
+  openActionPanel(s, state, act);
 }
-$('#close-dialog').onclick = () => $('#action-dialog').close();
-$('#action-form').onsubmit = async (e) => {
-  e.preventDefault();
-  if (!selected) return;
-  const data = new FormData(e.target),
-    a = {
-      type: 'place',
-      revision: selected.revision,
-      space: selected.id,
-      large: $('#use-large').checked,
-      declineBonus: data.get('declineBonus') === 'yes',
-    };
-  if (data.get('slot')) a.slot = Number(data.get('slot'));
-  for (const key of ['cardId', 'building']) if (data.get(key)) a[key] = data.get(key);
-  if (data.has('field')) a.field = Number(data.get('field'));
-  if (['make_wine', 'sell_grapes'].includes(selected.id))
-    a.grapes = data.getAll('grapes').map(Number);
-  if (selected.id === 'fill_order') a.wineIds = data.getAll('wineIds');
-  $('#confirm-action').disabled = true;
-  try {
-    if (await act(a)) $('#action-dialog').close();
-  } finally {
-    $('#confirm-action').disabled = false;
-  }
-};
 $('#resume-room').hidden = !token;
 $('#resume-room').onclick = () => connect();
 $('#nickname').value = localStorage.getItem('vineyard-ee-name') || '';

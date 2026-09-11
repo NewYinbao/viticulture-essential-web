@@ -60,18 +60,6 @@
 .ee-parent-card small {
   font-size: 11px;
 }
-#ee-action-dialog {
-  width: min(560px, 92vw);
-  max-height: 90vh;
-  overflow: auto;
-  padding: 24px;
-  border: 1px solid #bfa783;
-  background: #fff9e9;
-  border-radius: 14px;
-}
-#ee-action-dialog::backdrop {
-  background: #1c251ebb;
-}
 .card-art {
   background: #f4ecd8 !important;
 }
