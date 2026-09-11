@@ -4,12 +4,18 @@ package game
 func (r *Room) claimGrayWorker(p *Player) {
 	if r.GrayWorkerOwner == "" {
 		r.GrayWorkerOwner = p.ID
+		r.GrayWorkerTracked = true
+		p.GrayWorkerAvailable = true
 		p.Workers++
 	}
 }
 
 func (r *Room) isTriggerSeat(space string, seat Seat) bool {
-	return r.Context != nil && r.Context.TriggerSeat != nil && r.Context.Space == space && *r.Context.TriggerSeat == seat
+	if r.Context == nil || r.Context.TriggerSeat == nil || triggerSpace(r.Context) != space {
+		return false
+	}
+	s := r.Context.TriggerSeat
+	return s.PlayerID == seat.PlayerID && s.Slot == seat.Slot && s.Large == seat.Large && s.WorkerType == seat.WorkerType && s.Gray == seat.Gray
 }
 
 func (r *Room) hasRetrievableWorker(p *Player) bool {

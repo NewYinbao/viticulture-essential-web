@@ -1,3 +1,4 @@
+import { rhineCards } from './rhine-cards.js';
 const catalogue = {
   'vine-01': {
     name: '桑娇维塞 1',
@@ -981,6 +982,7 @@ const catalogue = {
     description: '开局获得 5 金币。再二选一：接受赠礼（1胜利分）；或额外获得 2 金币。',
   },
 };
+Object.assign(catalogue, rhineCards);
 export function localCard(c) {
   return { ...c, ...(catalogue[c.id] || {}) };
 }

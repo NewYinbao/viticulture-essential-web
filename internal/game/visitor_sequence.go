@@ -195,11 +195,7 @@ func (r *Room) visitorSequence(p *Player, s *VisitorStep, a Action) error {
 						if r.isTriggerSeat(id, seat) {
 							return fmt.Errorf("不能取回打出此牌的工人")
 						}
-						if seat.Large {
-							p.LargeWorker = true
-						} else {
-							p.Workers++
-						}
+						r.releaseSeat(seat)
 						r.cancelPlanned(sp.ID, seat)
 						if sp.ID == "yoke" {
 							p.YokeUsed = false
@@ -240,7 +236,11 @@ func (r *Room) visitorSequence(p *Player, s *VisitorStep, a Action) error {
 	case "winter-32":
 		allowed := false
 		for _, sp := range r.Spaces {
-			if sp.ID == a.Space && sp.Season == "summer" {
+			previous := sp.Season == "summer"
+			if r.tuscany() {
+				previous = seasonIndex(sp.Season) >= 0 && seasonIndex(sp.Season) < seasonIndex(r.Phase)
+			}
+			if sp.ID == a.Space && previous {
 				allowed = true
 			}
 		}

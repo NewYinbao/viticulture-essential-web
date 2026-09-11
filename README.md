@@ -2,6 +2,8 @@
 
 Go + 原生 HTML/CSS/JavaScript 的局域网多人桌游实现。支持 EE 本体 2–6 位真人、固定卡库、76 张访客、独立手牌、SSE 同步及本地 JSON 存档。单个可执行文件内嵌网页与 SVG，不需要 Java、Node 或外网即可游玩。
 
+本轮续作加入玩家座位密码与可选扩展，交付状态、测试及规则依据见 [最新交付记录](docs/expansions-release.md) 和 [玩家密码说明](docs/玩家密码与续作记录-20260911.md)。新程序使用 **Start-Viticulture-Continuation.cmd**，地址 `http://localhost:3015`、独立存档 `runtime/continuation-data`。它不会升级已运行的旧程序或迁移旧对局；以下原启动入口仍保留。
+
 ## 启动
 
 本机已有构建时，双击 **Start-Viticulture.cmd**。主机打开 http://localhost:3013；朋友打开 `http://主机局域网IP:3013`，输入房间码加入。
@@ -42,8 +44,7 @@ go run ./cmd/viticulture -addr 127.0.0.1:3013 -data ./runtime/ee-data
 ## 验证
 
 ```powershell
-go test -tags "ee_rule_audit audit_diff" ./...
-go vet ./...
+powershell -File scripts/check.ps1
 npm ci
 npx playwright install chromium
 npm run test:ui
@@ -54,6 +55,10 @@ Node 依赖仅用于开发。其他专项、截图位置和本次测试结果见
 
 ## 实现范围
 
-非官方游戏实现；不含 Tuscany、Plus 或 Automa。本次修复 Plant 拔藤入口、Papa 选择顺序及公开手牌类型数量。Planner／Organizer 的罕见组合，以及达到 20 分后回落的边界仍有待进一步官方裁定，详见规则核对笔记。
+非官方游戏实现。续作范围为 EE、Tuscany Essential 四季主板与影响力、36 张建筑卡、11 种特殊工人、Moor 40 张访客与 Rhine 80 张替换访客；不含 World、Bordeaux、旧版额外模块或 Automa。具体可用状态以最新交付记录为准。未启用的模块不出现在游戏内操作、规则与引导中。
 
 旧版本的记录保留在 docs/history，旧启动器保留兼容用途。旧 exe 和研究副本不随源码仓库分发。参考来源见 [规则核对](docs/rules-review.md)；未擅自为已有项目内容添加新的开源授权。
+
+## 可选临时公网分享
+
+默认仍为可信局域网；Cloudflare Quick Tunnel 需明确启用。双击启动器，回车默认局域网，输入 `2` 或 `y` 开启公网。安装、口令、安全边界与测试结果见 [Cloudflare 分享说明](docs/cloudflare.md)。已用真实公网及 Windows Edge 双浏览器验证登录、加入、开局、轮询与重连，并验证 Windows 父进程退出时回收隧道；不是新一轮完整游戏规则验收。

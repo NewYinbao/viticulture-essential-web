@@ -55,9 +55,15 @@ export function installHints() {
         ),
       ) + 'px';
   };
-  document.addEventListener('pointerover', (e) => show(e.target));
+  document.addEventListener('pointerover', (e) => {
+    // Programmatic/keyboard focus can scroll the page under a stationary
+    // pointer. That incidental pointer event must not dismiss its tooltip.
+    if (!e.target.closest?.('[data-hint]') && owner === document.activeElement) return;
+    show(e.target);
+  });
   document.addEventListener('focusin', (e) => show(e.target));
   document.addEventListener('pointerout', (e) => {
+    if (owner === document.activeElement) return;
     if (!owner?.contains(e.relatedTarget)) hide();
   });
   document.addEventListener('focusout', hide);

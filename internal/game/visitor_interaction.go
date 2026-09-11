@@ -138,7 +138,7 @@ func (r *Room) visitorInteraction(p *Player, s *VisitorStep, a Action) error {
 		case "winter-35":
 			return r.visitorTransfer(p, actor, a.CardIDs, 1, "summer")
 		case "winter-38":
-			if e := r.visitorTrain(p, 1, false); e != nil {
+			if e := r.visitorTrain(p, 1, false, a.SpecialWorker); e != nil {
 				return e
 			}
 			if p != actor {

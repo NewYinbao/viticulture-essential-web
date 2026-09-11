@@ -1,3 +1,4 @@
+const { authorizeFixtureStore } = require('../helpers/fixture-auth.cjs');
 // Isolated fixtures test public UI behavior, not full-game strategy.
 const { ROOT, GO, temp, executable } = require('./runtime.cjs');
 const { chromium } = require('playwright');
@@ -26,8 +27,8 @@ async function api(url, body, token) {
     execFileSync(GO, ['build', '-o', path.join(tmp, executable('server')), './cmd/viticulture'], { cwd: ROOT });
     const port = await new Promise((resolve) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
     base = 'http://127.0.0.1:' + port; await start();
-    const owner = await api('/api/create', { name: '山丘庄主' });
-    for (const name of ['河谷庄主', '林间庄主']) await api('/api/join', { name, code: owner.code });
+    const owner = await api('/api/create', {password:'test-password-123', name: '山丘庄主' });
+    for (const name of ['河谷庄主', '林间庄主']) await api('/api/join', {password:'test-password-123', name, code: owner.code });
     const lobby = await api('/api/state', null, owner.token);
     await api('/api/action', { type: 'start', revision: lobby.revision }, owner.token);
     await stop();
@@ -73,7 +74,7 @@ async function api(url, body, token) {
     const noWorker = seed('NOWORK'); noWorker.players[0].hand = [vines[0]]; noWorker.players[0].workers = 0; noWorker.players[0].largeWorker = false;
     const guidePlant = seed('GUIDE'); guidePlant.players[0].hand = [vines[0]];
     const guideWinter = seed('GUIDEW'); guideWinter.phase = 'winter'; guideWinter.players[0].fields[0].vines = [vines[0]];
-    fs.writeFileSync(file, JSON.stringify(store)); await start();
+    fs.writeFileSync(file, JSON.stringify(authorizeFixtureStore(store))); await start();
     browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.on('pageerror', (e) => report.errors.push(e.message));
@@ -83,7 +84,7 @@ async function api(url, body, token) {
     async function submit() { const response = page.waitForResponse((r) => r.url().endsWith('/api/action')); await page.locator('#confirm-action').click(); const res = await response; const v = await res.json(); assert.equal(res.status(), 200, JSON.stringify(v)); await page.locator('#action-panel').waitFor({state: 'detached'}); return v; }
     async function screenshot(name) { const dest = path.join(out, name + '.png'); await page.screenshot({ path: dest, fullPage: false }); report.screenshots.push(dest); }
     await load('PLANT');
-    assert.equal(await page.locator('[data-space=tour] .worker-slot').nth(0).getAttribute('aria-label'), '奖励');
+    assert.equal(await page.locator('[data-space=tour] .worker-slot').nth(0).getAttribute('aria-label'), '★ +1金币');
     assert.equal(await page.locator('[data-space=tour] .worker-slot').nth(1).locator('img').count(), 1);
     assert.match(await page.locator('[data-space=gain_coin] .slots').innerText(), /不限人数/);
     assert.match(await page.locator('[data-space=yoke]').getAttribute('data-hint'), /轭/);
@@ -296,6 +297,8 @@ async function api(url, body, token) {
     await page.keyboard.press('Escape');
     report.checks.push('four-step keyboard tour, persisted local toggle, contextual action hints and eight-topic rules; opening help and toggling mode preserve draft and send no game actions');
     await page.setViewportSize({width:390,height:844}); await load('BLOCK');
+    assert.equal(await page.locator('#beginner-guide').getAttribute('data-mode'), 'tour');
+    await page.locator('[data-guide-skip]').click();
     assert.match(await page.locator('#beginner-guide').innerText(), /藤缺什么/);
     await page.locator('#beginner-guide').scrollIntoViewIfNeeded(); await screenshot('mobile-beginner-guide');
     await page.locator('[data-space=plant]').click(); await pick('cards', demandingVine.id).click();
@@ -307,13 +310,13 @@ async function api(url, body, token) {
     await api('/api/action', {type:'place', space:'gain_coin', revision:1}, 'BLOCK');
     await page.waitForFunction(() => document.querySelector('#beginner-guide')?.textContent.includes('等候你的回合'));
     assert.equal(await page.locator('#spaces .guide-target').count(), 0);
-    await load('GUIDEW'); assert.match(await page.locator('#beginner-guide').innerText(), /先收获/);
-    await load('PAID'); assert.match(await page.locator('#beginner-guide').innerText(), /当前选择/);
+    await load('GUIDEW'); await page.locator('[data-guide-skip]').click(); assert.match(await page.locator('#beginner-guide').innerText(), /先收获/);
+    await load('PAID'); await page.locator('[data-guide-skip]').click(); assert.match(await page.locator('#beginner-guide').innerText(), /经纪人 · 选择效果/);
     const freshContext = await browser.newContext(); const freshPage = await freshContext.newPage(); await freshPage.goto(base);
     assert.equal(await freshPage.locator('#welcome [data-guide-toggle]').getAttribute('aria-pressed'), 'false');
     await freshPage.locator('#welcome [data-rules-open]').click(); assert(await freshPage.locator('#rules-help').isVisible());
     await freshPage.keyboard.press('Escape');
-    await freshPage.locator('#nickname').fill('新手入门检查'); await freshPage.locator('#create-room').click();
+    await freshPage.locator('#nickname').fill('新手入门检查');await freshPage.locator('#player-password').fill('test-password-123'); await freshPage.locator('#create-room').click();
     await freshPage.locator('#code-label').waitFor({state:'visible'});
     assert(await freshPage.locator('.table-nav [data-rules-open]').isVisible());
     await freshPage.locator('.table-nav [data-guide-toggle]').click();

@@ -1,0 +1,81 @@
+.tuscany-board {
+  min-width: 0;
+}
+.tuscany-personal-seasons,
+.tuscany-season-overview,
+.tuscany-regions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.tuscany-personal-seasons article,
+.tuscany-regions article,
+.tuscany-season-overview details {
+  border: 1px solid #a9ad8c;
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  background: #faf7ed;
+}
+.tuscany-board small {
+  display: block;
+  line-height: 1.6;
+}
+.tuscany-board p {
+  margin: 8px 0;
+}
+.tuscany-board summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 8px 0;
+}
+.tuscany-map-art {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+  margin: 12px auto;
+}
+.tuscany-star-count {
+  display: inline-block;
+  margin: 4px 8px 4px 0;
+  border: 1px solid #a9ad8c;
+  border-radius: 6px;
+  padding: 3px 7px;
+}
+.tuscany-choice-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+  width: 100%;
+}
+.tuscany-choice-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.tuscany-choice-inputs select {
+  width: 100%;
+  max-width: 100%;
+  min-height: 44px;
+  font-size: 16px;
+}
+.tuscany-board button {
+  min-height: 44px;
+  white-space: normal;
+}
+.tuscany-board :focus-visible,
+.tuscany-choice-inputs :focus-visible {
+  outline: 3px solid #375f78;
+  outline-offset: 3px;
+}
+@media (max-width: 520px) {
+  .tuscany-personal-seasons,
+  .tuscany-regions,
+  .tuscany-season-overview {
+    grid-template-columns: 1fr;
+  }
+}

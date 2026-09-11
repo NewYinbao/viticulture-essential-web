@@ -5,9 +5,11 @@ import (
 )
 
 type VisitorStep struct {
-	CardID  string `json:"cardId"`
-	Stage   string `json:"stage"`
-	ActorID string `json:"actorId"`
+	Rhine     *RhineStep `json:"rhine,omitempty"`
+	MoorCount int        `json:"moorCount,omitempty"`
+	CardID    string     `json:"cardId"`
+	Stage     string     `json:"stage"`
+	ActorID   string     `json:"actorId"`
 }
 type ChoiceField struct {
 	Name string `json:"name"`
@@ -24,13 +26,15 @@ var visitorDefs = map[string]visitorDef{}
 
 func (r *Room) visitorPrompt(p *Player, cardID, stage string, options []string) {
 	r.Choices = append(r.Choices, Choice{ID: NewID(), PlayerID: p.ID, Kind: "visitor", Options: options, Count: 1, Visitor: &VisitorStep{CardID: cardID, Stage: stage, ActorID: r.Context.ActorID}})
+	r.decorateMoorChoice(&r.Choices[len(r.Choices)-1], p)
+	r.rhineDecorate(&r.Choices[len(r.Choices)-1])
 }
 func (r *Room) startVisitor(p *Player, a Action, bonus bool) error {
 	typ := "summer"
 	if a.Space == "winter_visitor" {
 		typ = "winter"
 	}
-	if cardIndex(p, a.CardID, typ) < 0 {
+	if !visitorInSeason(p, a.CardID, typ) {
 		return fmt.Errorf("非自己的当季访客")
 	}
 	if _, ok := visitorDefs[a.CardID]; !ok {
@@ -76,10 +80,13 @@ func (r *Room) queueVisitor(p *Player, id string) error {
 	}
 	c := p.Hand[i]
 	removeCard(p, i)
-	if id == "winter-19" {
+	if id == "winter-19" || moorHeldCard(id) {
 		r.Context.Held = append(r.Context.Held, c)
-	} else {
+	} else if id != "rhine-summer-sonInLaw" {
 		r.discard(c)
+	}
+	if has(p, "inn") {
+		p.Coins++
 	}
 	r.Context.SourceCardID = id
 	r.visitorPrompt(p, id, "effect", d.Options)
@@ -98,13 +105,15 @@ func (r *Room) resolveVisitorChoice(id string, a Action) error {
 		return fmt.Errorf("无效访客选项")
 	}
 	r.Choices = r.Choices[1:]
-	if c.Visitor.Stage == "second" {
+	if c.Visitor.Stage == "nested_action_done" {
+		// Continue to the saved parent through the ordinary completion path.
+	} else if c.Visitor.Stage == "second" {
 		if a.Option == "play" {
 			typ := "summer"
 			if r.Context.Space == "winter_visitor" {
 				typ = "winter"
 			}
-			if cardIndex(p, a.CardID, typ) < 0 {
+			if !visitorInSeason(p, a.CardID, typ) {
 				return fmt.Errorf("非自己的当季访客")
 			}
 			if e := r.queueVisitor(p, a.CardID); e != nil {
@@ -115,8 +124,30 @@ func (r *Room) resolveVisitorChoice(id string, a Action) error {
 		if e := r.visitorBeforeEffect(p, c.Visitor, a); e != nil {
 			return e
 		}
+		effectContext := r.Context
 		if e := r.visitorEffect(p, c.Visitor, a); e != nil {
 			return e
+		}
+		if r.Context != effectContext {
+			if err := r.finishNestedParentEffect(p, c.Visitor, effectContext); err != nil {
+				return err
+			}
+			if len(r.Choices) == 1 && r.Choices[0].Visitor != nil && r.Choices[0].Visitor.Stage == "nested_action_done" {
+				r.Choices = nil
+				r.finishVisitorContext()
+				return nil
+			}
+			r.TurnID = r.Choices[0].PlayerID
+			return nil
+		}
+		if e := r.visitorContinuationFeasible(p, c.Visitor); e != nil {
+			return e
+		}
+		if c.Visitor.Stage == "effect" {
+			if r.queueStructureVisitorBonus(p) {
+				r.TurnID = r.Choices[0].PlayerID
+				return nil
+			}
 		}
 		if e := r.visitorContinuationFeasible(p, c.Visitor); e != nil {
 			return e
@@ -142,9 +173,30 @@ func visitorPay(p *Player, coins, vp int) error {
 	return nil
 }
 func (r *Room) visitorBuild(p *Player, b string, discount int) error {
+	if d, ok := structureDef(b); ok && r.Config.Structures {
+		if p.hasStructure(d.ID) {
+			return fmt.Errorf("已建造该结构")
+		}
+		a := Action{Building: structureCardID(d.ID), Mode: "mat", StructureSlot: -1}
+		if _, _, ok := p.structureCardInHand(d.ID); !ok {
+			return fmt.Errorf("结构牌不在手中")
+		}
+		if len(p.StructureSlots) >= 2 && p.StructureSlots[0] != "" && p.StructureSlots[1] != "" {
+			for i, f := range p.Fields {
+				if !f.Sold && len(f.Vines) == 0 && f.Structure == "" {
+					a.Mode, a.Field = "field", i
+					break
+				}
+			}
+		}
+		return r.buildStructure(p, a, discount)
+	}
 	cost, ok := costs[b]
 	if !ok {
 		return fmt.Errorf("无效建筑")
+	}
+	if has(p, "workshop") {
+		cost = max(0, cost-1)
 	}
 	if discount > cost {
 		discount = cost
@@ -160,6 +212,7 @@ func (r *Room) visitorCards(p *Player, ids []string, n int, visitors bool) error
 		return fmt.Errorf("须选择%d张手牌", n)
 	}
 	seen := map[string]bool{}
+	selected := make([]Card, 0, n)
 	for _, id := range ids {
 		i := -1
 		for j, c := range p.Hand {
@@ -175,8 +228,18 @@ func (r *Room) visitorCards(p *Player, ids []string, n int, visitors bool) error
 		if visitors && c.Type != "summer" && c.Type != "winter" {
 			return fmt.Errorf("须为访客")
 		}
+		selected = append(selected, c)
+	}
+	// Commit only after every selected card is validated. This keeps Guest
+	// House, Barn, and two-card trades atomic on invalid input.
+	for _, c := range selected {
 		r.discard(c)
-		removeCard(p, i)
+		for i, handCard := range p.Hand {
+			if handCard.ID == c.ID {
+				removeCard(p, i)
+				break
+			}
+		}
 	}
 	return nil
 }
@@ -244,6 +307,9 @@ func (r *Room) visitorUproot(p *Player, a Action, n int) error {
 	return r.visitorCards(p, a.CardIDs, n, false)
 }
 func (r *Room) visitorHarvest(p *Player, a Action, n int) error {
+	if a.HarvestAll && has(p, "harvest_machine") {
+		return r.performEEPlacement(p, Action{Space: "harvest", Mode: "all"}, false)
+	}
 	if len(a.Fields) == 0 || len(a.Fields) > n {
 		return fmt.Errorf("收获超限")
 	}
@@ -258,20 +324,27 @@ func (r *Room) visitorMake(p *Player, a Action, n int) error {
 	if len(a.Recipes) == 0 {
 		return fmt.Errorf("至少酿1酒")
 	}
-	return makeWines(p, a.Recipes, n)
+	return makeActionWines(p, a, n)
 }
-func (r *Room) visitorTrain(p *Player, cost int, now bool) error {
-	if p.TotalWorkers >= 6 {
-		return fmt.Errorf("工人上限6")
+func (r *Room) visitorTrain(p *Player, cost int, now bool, workerType ...string) error {
+	id := "regular"
+	if len(workerType) > 0 && workerType[0] != "" {
+		id = workerType[0]
 	}
-	if e := visitorPay(p, cost, 0); e != nil {
-		return e
+	if cost < 0 {
+		return fmt.Errorf("培训基础费用无效")
 	}
-	p.TotalWorkers++
+	if err := r.trainWorker(p, id, 4-cost); err != nil {
+		return err
+	}
 	if now {
-		p.Workers++
-	} else {
-		p.Trained++
+		if id == "grande" {
+			p.LargeWorker = true
+		} else if id == "regular" {
+			p.Workers++
+		} else {
+			p.SpecialWorkerReady[id] = r.Year
+		}
 	}
 	return nil
 }

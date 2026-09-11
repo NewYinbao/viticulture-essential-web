@@ -36,6 +36,12 @@ func init() {
 	add(38, "向至多3个不同对手各付2金币，每个得1分", "pay")
 }
 func (r *Room) visitorEffect(p *Player, s *VisitorStep, a Action) error {
+	if isRhine(s.CardID) {
+		return r.rhineVisitorEffect(p, s, a)
+	}
+	if isMoor(s.CardID) {
+		return r.moorEffect(p, s, a)
+	}
 	if s.CardID == "summer-29" || s.CardID == "summer-33" || s.CardID == "winter-11" {
 		return r.visitorSpecial(p, s, a)
 	}

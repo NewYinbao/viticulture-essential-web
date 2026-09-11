@@ -28,6 +28,27 @@ func (r *Room) canBuildVisitor(p *Player, discount int) bool {
 			return true
 		}
 	}
+	if r.Config.Structures {
+		for _, c := range p.Hand {
+			if c.Type != "structure" {
+				continue
+			}
+			d, ok := structureDef(c.StructureID)
+			if !ok {
+				continue
+			}
+			price := d.Cost - discount
+			if has(p, "workshop") {
+				price--
+			}
+			if price < 0 {
+				price = 0
+			}
+			if p.Coins >= price && !p.hasStructure(d.ID) {
+				return true
+			}
+		}
+	}
 	return false
 }
 func (r *Room) canPlantVisitor(p *Player, structures, limit bool) bool {
@@ -189,6 +210,15 @@ func (r *Room) canSequence(p *Player, s *VisitorStep, option string) bool {
 				return true
 			}
 		}
+		if r.Config.Structures {
+			for _, c := range p.Hand {
+				if c.Type == "structure" {
+					if try(Action{Building: c.StructureID}) {
+						return true
+					}
+				}
+			}
+		}
 	}
 	if first == "plant" {
 		for _, c := range p.Hand {
@@ -204,6 +234,12 @@ func (r *Room) canSequence(p *Player, s *VisitorStep, option string) bool {
 	return false
 }
 func (r *Room) mandatoryVisitorPlayable(p *Player, id string) error {
+	if isRhine(id) {
+		return r.rhinePlayable(p, id)
+	}
+	if isMoor(id) {
+		return r.moorPlayable(p, id)
+	}
 	// Exclude the played visitor from discard costs (also for nested/bonus plays).
 	p = probePlayer(p)
 	for i, c := range p.Hand {
@@ -361,6 +397,16 @@ func (r *Room) mandatoryVisitorPlayable(p *Player, id string) error {
 // feasibility decision. Other continuations are checked after deterministic
 // first-step simulation within apply's transaction, before HTTP save/commit.
 func (r *Room) visitorBeforeEffect(p *Player, s *VisitorStep, a Action) error {
+	if isRhine(s.CardID) {
+		values := map[string]string{}
+		if s.Rhine != nil {
+			values = s.Rhine.Values
+		}
+		if !r.rhineFeasible(p, s.CardID, rhinePendingOperations(s, a.Option), values) {
+			return fmt.Errorf("当前资源不足以完成Rhine分支")
+		}
+		return nil
+	}
 	if s.Stage != "effect" {
 		return nil
 	}
@@ -380,6 +426,12 @@ func (r *Room) visitorBeforeEffect(p *Player, s *VisitorStep, a Action) error {
 	return nil
 }
 func (r *Room) visitorContinuationFeasible(p *Player, s *VisitorStep) error {
+	if isRhine(s.CardID) {
+		if !r.rhineContinuationFeasible(p, s) {
+			return fmt.Errorf("本步骤未提交：Rhine余下强制效果无法完成")
+		}
+		return nil
+	}
 	for _, c := range r.Choices {
 		v := c.Visitor
 		if v == nil || v.CardID != s.CardID || c.PlayerID != p.ID {
@@ -387,6 +439,10 @@ func (r *Room) visitorContinuationFeasible(p *Player, s *VisitorStep) error {
 		}
 		ok := true
 		switch s.CardID {
+		case "moor-winter-16":
+			if v.Stage == "age" {
+				ok = moorCanAgeGrapes(p, v.MoorCount)
+			}
 		case "summer-05", "summer-22", "winter-20", "winter-29":
 			if v.Stage == "continuation" {
 				ok = r.canSubaction(p, v, c.Options[0])

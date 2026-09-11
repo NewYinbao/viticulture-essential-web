@@ -111,7 +111,7 @@ func (r *Room) visitorWinterEffect(p *Player, s *VisitorStep, a Action) error {
 			if e := visitorPay(p, 0, 1); e != nil {
 				return e
 			}
-			return r.visitorTrain(p, 0, false)
+			return r.visitorTrain(p, 0, false, a.SpecialWorker)
 		}
 		for _, q := range r.Players {
 			if q != p && q.TotalWorkers == 6 {
@@ -122,7 +122,7 @@ func (r *Room) visitorWinterEffect(p *Player, s *VisitorStep, a Action) error {
 		if a.Option == "make" {
 			return r.visitorMake(p, a, 2)
 		}
-		return r.visitorTrain(p, 2, false)
+		return r.visitorTrain(p, 2, false, a.SpecialWorker)
 	case "winter-09":
 		if a.Option == "draw" {
 			draw("vine", 1)
@@ -157,7 +157,7 @@ func (r *Room) visitorWinterEffect(p *Player, s *VisitorStep, a Action) error {
 		}
 	case "winter-13":
 		if a.Option == "train" {
-			return r.visitorTrain(p, 2, false)
+			return r.visitorTrain(p, 2, false, a.SpecialWorker)
 		}
 		if p.TotalWorkers != 6 {
 			return fmt.Errorf("须已有6工人")
@@ -248,7 +248,7 @@ func (r *Room) visitorWinterEffect(p *Player, s *VisitorStep, a Action) error {
 		}
 	case "winter-23":
 		if s.Stage == "train" {
-			return r.visitorTrain(p, 3, false)
+			return r.visitorTrain(p, 3, false, a.SpecialWorker)
 		}
 		if s.Stage == "draw" {
 			draw("order", 2)
@@ -259,7 +259,7 @@ func (r *Room) visitorWinterEffect(p *Player, s *VisitorStep, a Action) error {
 				return e
 			}
 			if a.Option == "train_draw" {
-				if e := r.visitorTrain(p, 3, false); e != nil {
+				if e := r.visitorTrain(p, 3, false, a.SpecialWorker); e != nil {
 					return e
 				}
 				r.visitorPrompt(p, s.CardID, "draw", []string{"draw"})
@@ -268,7 +268,7 @@ func (r *Room) visitorWinterEffect(p *Player, s *VisitorStep, a Action) error {
 				r.visitorPrompt(p, s.CardID, "train", []string{"train"})
 			}
 		} else if a.Option == "train" {
-			return r.visitorTrain(p, 3, false)
+			return r.visitorTrain(p, 3, false, a.SpecialWorker)
 		} else {
 			draw("order", 2)
 		}
@@ -319,7 +319,7 @@ func (r *Room) visitorWinterEffect(p *Player, s *VisitorStep, a Action) error {
 		}
 	case "winter-31":
 		if a.Option == "train" {
-			return r.visitorTrain(p, 3, true)
+			return r.visitorTrain(p, 3, true, a.SpecialWorker)
 		}
 		if e := visitorWine(p, a.WineIDs, 1); e != nil {
 			return e

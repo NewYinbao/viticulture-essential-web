@@ -1,6 +1,7 @@
 {
   "name": "viticulture-essential-web",
   "private": true,
+  "type": "module",
   "description": "Development tools only; the shipped Go executable needs no Node.js runtime.",
   "scripts": {
     "format": "prettier --write web/static/**/*.js web/static/**/*.css web/static/index.html",
@@ -9,7 +10,9 @@
     "test:rules-ui": "node tests/e2e/rules-fix-browser-test.cjs",
     "test:visitors": "node tests/e2e/visitor-browser-test.cjs",
     "test:game": "node tests/e2e/natural-full-game-test.cjs",
-    "test:discard": "node tests/e2e/discard-browser-test.cjs"
+    "test:discard": "node tests/e2e/discard-browser-test.cjs",
+    "test:units": "node tests/expansions-help-unit-test.cjs && node tests/expansions-catalogue-unit-test.cjs && node tests/tuscany-ui-unit-test.cjs && node tests/polling-unit-test.cjs",
+    "test:expansions": "node tests/expansions-full-browser-test.cjs"
   },
   "devDependencies": { "playwright": "1.63.0", "prettier": "3.9.6" }
 }

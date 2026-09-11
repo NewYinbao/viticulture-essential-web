@@ -48,15 +48,22 @@ func (a *App) identity(r *http.Request) (*game.Room, string) {
 	if !ok {
 		return nil, ""
 	}
-	return a.Store.Rooms[s.Code], s.PlayerID
+	room := a.Store.Rooms[s.Code]
+	if room == nil || room.Player(s.PlayerID) == nil {
+		return nil, ""
+	}
+	return room, s.PlayerID
 }
 func (a *App) routes() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/transport", func(w http.ResponseWriter, r *http.Request) { reply(w, 200, map[string]bool{"poll": false}) })
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		reply(w, 200, map[string]any{"ok": true, "version": "ee-rules-fix"})
 	})
 	mux.HandleFunc("POST /api/create", a.enter)
 	mux.HandleFunc("POST /api/join", a.enter)
+	mux.HandleFunc("POST /api/password", a.password)
+	mux.HandleFunc("POST /api/logout", a.logout)
 	mux.HandleFunc("GET /api/state", func(w http.ResponseWriter, r *http.Request) {
 		a.mu.Lock()
 		defer a.mu.Unlock()
@@ -65,7 +72,10 @@ func (a *App) routes() http.Handler {
 			fail(w, 401, "会话无效，请重新加入")
 			return
 		}
-		reply(w, 200, room.View(id))
+		if !a.requirePassword(w, room, id) {
+			return
+		}
+		reply(w, 200, a.playerView(room, id))
 	})
 	mux.HandleFunc("POST /api/action", a.action)
 	mux.HandleFunc("GET /api/events", a.events)
@@ -88,8 +98,9 @@ func (a *App) routes() http.Handler {
 }
 func (a *App) enter(w http.ResponseWriter, r *http.Request) {
 	var in struct {
-		Name string `json:"name"`
-		Code string `json:"code"`
+		Name     string `json:"name"`
+		Code     string `json:"code"`
+		Password string `json:"password"`
 	}
 	if e := decode(w, r, &in); e != nil {
 		fail(w, 400, "请求格式错误")
@@ -106,6 +117,62 @@ func (a *App) enter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if !validPassword(in.Password) {
+		fail(w, 400, "密码需要8–128个字符")
+		return
+	}
+	in.Code = strings.ToUpper(strings.TrimSpace(in.Code))
+	if !a.beginAuth(w, r, in.Code+":"+in.Name) {
+		return
+	}
+	defer a.endAuth()
+	// Password checks run outside the game mutex, so login cannot freeze a table.
+	if r.URL.Path == "/api/join" {
+		a.mu.Lock()
+		room := a.Store.Rooms[in.Code]
+		id := ""
+		if room != nil {
+			for _, p := range room.Players {
+				if p.Name == in.Name {
+					id = p.ID
+					break
+				}
+			}
+		}
+		record, protected := a.Store.Passwords[id]
+		a.mu.Unlock()
+		if room == nil {
+			fail(w, 404, "房间不存在")
+			return
+		}
+		if id != "" {
+			if !protected {
+				fail(w, 403, "旧座位尚未设置密码，请在原浏览器中设置；不能凭昵称认领")
+				return
+			}
+			if !record.matches(in.Password) {
+				fail(w, 401, "昵称或密码不正确")
+				return
+			}
+			a.mu.Lock()
+			defer a.mu.Unlock()
+			room = a.Store.Rooms[in.Code]
+			if room == nil || room.Player(id) == nil || a.Store.Passwords[id] != record {
+				fail(w, 409, "座位已变化，请重新加入")
+				return
+			}
+			t, sessions := a.replaceSession(room, id)
+			if err := a.save(); err != nil {
+				a.restoreSessions(t, sessions)
+				fail(w, 500, "存档失败，登录未生效")
+				return
+			}
+			a.notify(room.Code)
+			reply(w, 200, map[string]string{"token": t, "code": room.Code})
+			return
+		}
+	}
+	password := makePassword(in.Password)
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	var room *game.Room
@@ -124,13 +191,13 @@ func (a *App) enter(w http.ResponseWriter, r *http.Request) {
 		}
 		room = &game.Room{Code: code, Phase: "lobby", Players: []*game.Player{}, Spaces: []game.Space{}, WakeSlots: []game.WakeSlot{}, Log: []string{}}
 	} else {
-		room = a.Store.Rooms[strings.ToUpper(strings.TrimSpace(in.Code))]
+		room = a.Store.Rooms[in.Code]
 		if room == nil {
 			fail(w, 404, "房间不存在")
 			return
 		}
 		if room.Phase != "lobby" {
-			fail(w, 400, "对局已开始；原玩家请用原浏览器恢复会话")
+			fail(w, 400, "对局已开始；原玩家请输入原昵称和密码")
 			return
 		}
 		if len(room.Players) >= 6 {
@@ -155,8 +222,10 @@ func (a *App) enter(w http.ResponseWriter, r *http.Request) {
 	a.Store.Rooms[room.Code] = room
 	t := game.NewID()
 	a.Store.Sessions[t] = Session{Code: room.Code, PlayerID: p.ID}
+	a.Store.Passwords[p.ID] = password
 	if e := a.save(); e != nil {
 		delete(a.Store.Sessions, t)
+		delete(a.Store.Passwords, p.ID)
 		if created {
 			delete(a.Store.Rooms, room.Code)
 		} else {
@@ -184,6 +253,9 @@ func (a *App) action(w http.ResponseWriter, r *http.Request) {
 		fail(w, 401, "会话无效")
 		return
 	}
+	if !a.requirePassword(w, room, id) {
+		return
+	}
 	if act.Revision != room.Revision {
 		fail(w, 409, "局面已经变化，请刷新操作")
 		return
@@ -204,7 +276,7 @@ func (a *App) action(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.notify(room.Code)
-	reply(w, 200, copy.View(id))
+	reply(w, 200, a.playerView(copy, id))
 }
 
 // Handler returns the application HTTP handler.

@@ -3,13 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>葡萄酒庄园 · LAN</title>
+    <title>葡萄酒庄园</title>
     <link rel="stylesheet" href="/css/style.css" />
     <link rel="stylesheet" href="/css/ee-style.css" />
     <link rel="stylesheet" href="/css/usability.css" />
     <link rel="stylesheet" href="/css/action-panel.css" />
     <link rel="stylesheet" href="/css/help.css" />
     <script type="module" src="/js/app.js"></script>
+    <link rel="stylesheet" href="/css/expansions.css" />
+    <link rel="stylesheet" href="/css/tuscany.css" />
   </head>
   <body>
     <a class="skip-link" href="#game">跳到游戏棋盘</a>
@@ -31,7 +33,9 @@
             alt="原创插画：阳光下的山丘葡萄园与乡间酒庄"
           /><span class="eyebrow">从一颗葡萄，到一座酒庄</span>
           <h2>四季流转，<br />酿造你的佳作。</h2>
-          <p>邀请同一局域网的朋友落座。每人拥有独立手牌，由本地服务器主持这场酒庄经营对局。</p>
+          <p>
+            邀请局域网或持有公网链接与访问口令的朋友落座。每人拥有独立手牌，由本地服务器主持这场酒庄经营对局。
+          </p>
           <div class="features">
             <span>2–6 位玩家</span><span>本地存档</span><span>无需外网</span>
           </div>
@@ -51,7 +55,18 @@
               maxlength="20"
               placeholder="例如：山丘庄主"
               autocomplete="nickname" /></label
-          ><button id="resume-room" hidden>回到上次的房间</button
+          ><label
+            >玩家密码<input
+              id="player-password"
+              type="password"
+              minlength="8"
+              maxlength="128"
+              required
+              autocomplete="current-password"
+              placeholder="至少8个字符"
+          /></label>
+          <p class="muted">密码保护本房间的座位。原玩家用相同昵称和密码回来。</p>
+          <button id="resume-room" hidden>回到上次的房间</button
           ><button id="create-room" class="primary">创建新房间</button>
           <div class="divider">或加入朋友的酒庄</div>
           <label
@@ -60,12 +75,16 @@
               maxlength="6"
               placeholder="6位房间码"
               autocapitalize="characters" /></label
-          ><button id="join-room">加入房间</button>
+          ><button id="join-room">加入 / 恢复房间</button>
           <p class="note">
-            EE 本体 2–6 人：76
-            张访客效果、多人响应与延后行动已接入。特殊组合约定见下方说明；不含扩展和单人模式。
+            2–6 人经营酒庄。创建房间后由房主选择开局规则，每位玩家使用自己的座位密码。
           </p>
         </div>
+      </section>
+      <section id="legacy-access" class="panel" hidden>
+        <h2>恢复旧座位</h2>
+        <p id="legacy-seat"></p>
+        <button id="legacy-back">返回入口</button>
       </section>
       <section id="game" hidden>
         <div class="table-head">
@@ -77,7 +96,7 @@
           </div>
           <div class="table-controls">
             <span id="code-label" class="badge"></span><button id="invite">复制邀请链接</button
-            ><button id="switch-table">返回入口</button>
+            ><button id="switch-table">返回入口</button><button id="lock-session">锁定退出</button>
           </div>
         </div>
         <nav class="table-nav" aria-label="桌面快速导航">
@@ -88,13 +107,53 @@
           </button>
           <button type="button" data-guide-toggle aria-pressed="false">新手引导</button>
         </nav>
+        <details class="panel" id="password-settings">
+          <summary id="password-settings-title">玩家密码</summary>
+          <form id="password-form" class="password-form">
+            <p id="password-settings-note" class="muted"></p>
+            <label id="enrollment-code-label" hidden
+              >旧座位验证码<input
+                id="enrollment-code"
+                maxlength="12"
+                autocomplete="off"
+                placeholder="向服务器房主索取"
+            /></label>
+            <label id="current-password-label"
+              >原密码<input
+                id="current-password"
+                type="password"
+                maxlength="128"
+                autocomplete="current-password"
+            /></label>
+            <label
+              >新密码<input
+                id="new-password"
+                type="password"
+                minlength="8"
+                maxlength="128"
+                required
+                autocomplete="new-password"
+            /></label>
+            <label
+              >确认新密码<input
+                id="confirm-password"
+                type="password"
+                minlength="8"
+                maxlength="128"
+                required
+                autocomplete="new-password"
+            /></label>
+            <button class="primary" type="submit">保存密码</button>
+            <p id="password-error" role="status"></p>
+          </form>
+        </details>
         <div id="action-area"></div>
         <nav id="season-track" aria-label="四季进程"></nav>
         <div id="status" role="status"></div>
         <section class="panel" id="lobby-panel" hidden>
           <h3>等待庄主们落座</h3>
           <p>
-            至少2人方可开始，最多6人。请保留当前浏览器的会话，刷新或断线后可恢复。返回入口不会退出座位。
+            至少2人方可开始，最多6人。刷新自动恢复；换浏览器可用房间码、昵称和密码登录。返回入口不会退出座位。
           </p>
           <button id="start-game" class="primary">开始第一年</button>
         </section>
@@ -145,16 +204,12 @@
       <details class="panel rules">
         <summary>版本范围与特殊约定</summary>
         <div id="rules-text">
-          <p>
-            原生 Go 本地多人版本。固定牌库、76
-            张访客及基础流程已接入并通过逐分支和自然对局测试。非官方认证；Planner
-            预约按先后结算，Organizer
-            在外层双访客完成后结束季节。单人及扩展不在本版范围，部分原创主题插画共用。
-          </p>
+          <p>本地多人游戏。进入房间后，这里会显示本局采用的规则；规则按钮提供分主题速查。</p>
         </div>
       </details>
       <footer>
-        本地运行 · 独立玩家视角 · 无第三方脚本 / 字体 / 图片<br />请勿将服务映射到公网。规则与原版差异见上方说明。
+        本地运行 · 独立玩家视角 · 无第三方脚本 / 字体 / 图片<br />公网分享请使用启动器的 Cloudflare
+        模式，并仅向可信朋友分享链接与口令。规则与原版差异见上方说明。
       </footer>
     </main>
     <div id="toast" role="status" hidden></div>

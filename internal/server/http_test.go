@@ -25,7 +25,7 @@ func TestSaveRestore(t *testing.T) {
 	r := testRoom()
 	begin(t, r)
 	a.Store.Rooms[r.Code] = r
-	a.Store.Sessions["secret"] = Session{Code: r.Code, PlayerID: r.HostID}
+	setFixtureSession(a, "secret", r.Code, r.HostID)
 	if e = a.save(); e != nil {
 		t.Fatal(e)
 	}
@@ -55,13 +55,13 @@ func request(h http.Handler, method, path, token string, body any) *httptest.Res
 func TestHTTPAndReplay(t *testing.T) {
 	a, _ := loadApp(t.TempDir())
 	h := a.routes()
-	w := request(h, "POST", "/api/create", "", map[string]string{"name": "alice"})
+	w := request(h, "POST", "/api/create", "", map[string]string{"password": "test-password-123", "name": "alice"})
 	if w.Code != 200 {
 		t.Fatal(w.Body.String())
 	}
 	var ca map[string]string
 	_ = json.Unmarshal(w.Body.Bytes(), &ca)
-	w = request(h, "POST", "/api/join", "", map[string]string{"name": "bob", "code": ca["code"]})
+	w = request(h, "POST", "/api/join", "", map[string]string{"password": "test-password-123", "name": "bob", "code": ca["code"]})
 	if w.Code != 200 {
 		t.Fatal(w.Body.String())
 	}
@@ -97,7 +97,7 @@ func TestTransactionRollback(t *testing.T) {
 	r := testRoom()
 	begin(t, r)
 	a.Store.Rooms[r.Code] = r
-	a.Store.Sessions["x"] = Session{Code: r.Code, PlayerID: r.TurnID}
+	setFixtureSession(a, "x", r.Code, r.TurnID)
 	before, _ := json.Marshal(r)
 	w := request(a.routes(), "POST", "/api/action", "x", game.Action{Type: "place", Space: "build", Building: "unknown", Revision: r.Revision})
 	if w.Code != 400 {
@@ -114,7 +114,7 @@ func TestSSEPrivateState(t *testing.T) {
 	r := testRoom()
 	begin(t, r)
 	a.Store.Rooms[r.Code] = r
-	a.Store.Sessions["a"] = Session{Code: r.Code, PlayerID: r.Players[0].ID}
+	setFixtureSession(a, "a", r.Code, r.Players[0].ID)
 	server := httptest.NewServer(a.routes())
 	defer server.Close()
 	client := http.Client{Timeout: 2 * time.Second}
@@ -142,7 +142,7 @@ func TestEEVisitorHTTPAtomicReject(t *testing.T) {
 	r := eeBegin(t, 2)
 	a, _ := loadApp(t.TempDir())
 	a.Store.Rooms[r.Code] = r
-	a.Store.Sessions["ee"] = Session{Code: r.Code, PlayerID: r.TurnID}
+	setFixtureSession(a, "ee", r.Code, r.TurnID)
 	before, _ := json.Marshal(r)
 	body, _ := json.Marshal(game.Action{Type: "place", Space: "summer_visitor", Revision: r.Revision})
 	req := httptest.NewRequest("POST", "/api/action", bytes.NewReader(body))
@@ -176,7 +176,7 @@ func TestEEWinterVisitorHTTPAtomicReject(t *testing.T) {
 	resolveTestChoices(t, r)
 	a, _ := loadApp(t.TempDir())
 	a.Store.Rooms[r.Code] = r
-	a.Store.Sessions["winter"] = Session{Code: r.Code, PlayerID: r.TurnID}
+	setFixtureSession(a, "winter", r.Code, r.TurnID)
 	before, _ := json.Marshal(r)
 	w := request(a.routes(), "POST", "/api/action", "winter", game.Action{Type: "place", Space: "winter_visitor", Revision: r.Revision})
 	after, _ := json.Marshal(a.Store.Rooms[r.Code])
@@ -194,7 +194,7 @@ func TestVisitorPermissionRollbackReplayAndPersistence(t *testing.T) {
 	}
 	app.Store.Rooms[r.Code] = r
 	for i, q := range r.Players {
-		app.Store.Sessions[fmt.Sprint(i)] = Session{Code: r.Code, PlayerID: q.ID}
+		setFixtureSession(app, fmt.Sprint(i), r.Code, q.ID)
 	}
 	send := func(token string, a game.Action) int {
 		return request(app.routes(), "POST", "/api/action", token, a).Code
@@ -287,7 +287,7 @@ func TestImporterRealHTTPEmptyEscrowRestart(t *testing.T) {
 			}
 			app.Store.Rooms[r.Code] = r
 			for _, p := range r.Players {
-				app.Store.Sessions[p.ID] = Session{Code: r.Code, PlayerID: p.ID}
+				setFixtureSession(app, p.ID, r.Code, p.ID)
 			}
 			srv := httptest.NewServer(app.routes())
 			defer func() { srv.Close() }()
@@ -344,7 +344,7 @@ func TestVisitorFeasibilityRealHTTPRollbackAndRestart(t *testing.T) {
 		t.Fatal(e)
 	}
 	app.Store.Rooms[r.Code] = r
-	app.Store.Sessions["actor"] = Session{Code: r.Code, PlayerID: p.ID}
+	setFixtureSession(app, "actor", r.Code, p.ID)
 	srv := httptest.NewServer(app.routes())
 	defer func() { srv.Close() }()
 	send := func(a game.Action, want int) {

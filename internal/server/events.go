@@ -16,6 +16,10 @@ func (a *App) events(w http.ResponseWriter, r *http.Request) {
 		fail(w, 401, "会话无效")
 		return
 	}
+	if !a.requirePassword(w, room, id) {
+		a.mu.Unlock()
+		return
+	}
 	if len(a.subs) >= 128 {
 		a.mu.Unlock()
 		fail(w, 429, "连接数上限")
@@ -32,7 +36,15 @@ func (a *App) events(w http.ResponseWriter, r *http.Request) {
 	rc := http.NewResponseController(w)
 	push := func() error {
 		a.mu.Lock()
-		b, e := json.Marshal(a.Store.Rooms[code].View(id))
+		current, currentID := a.identity(r)
+		if current == nil || currentID != id || current.Code != code {
+			a.mu.Unlock()
+			_ = rc.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			_, _ = io.WriteString(w, "event: session-ended\ndata: {}\n\n")
+			_ = rc.Flush()
+			return fmt.Errorf("session revoked")
+		}
+		b, e := json.Marshal(a.playerView(current, id))
 		a.mu.Unlock()
 		if e != nil {
 			return e

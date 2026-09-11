@@ -8,18 +8,29 @@ import (
 )
 
 type Card struct {
-	Trellis      bool   `json:"trellis"`
-	Irrigation   bool   `json:"irrigation"`
-	Implemented  bool   `json:"implemented"`
-	ID           string `json:"id"`
-	Type         string `json:"type"`
-	Name         string `json:"name"`
-	Description  string `json:"description"`
-	Red          int    `json:"red"`
-	White        int    `json:"white"`
-	Requirements []Wine `json:"requirements"`
-	Points       int    `json:"points"`
-	Income       int    `json:"income"`
+	Trellis           bool   `json:"trellis"`
+	Irrigation        bool   `json:"irrigation"`
+	Implemented       bool   `json:"implemented"`
+	ID                string `json:"id"`
+	Type              string `json:"type"`
+	Name              string `json:"name"`
+	Description       string `json:"description"`
+	Red               int    `json:"red"`
+	White             int    `json:"white"`
+	Requirements      []Wine `json:"requirements"`
+	Points            int    `json:"points"`
+	Income            int    `json:"income"`
+	StructureID       string `json:"structureId,omitempty"`
+	StructureCost     int    `json:"structureCost,omitempty"`
+	StructureWorker   bool   `json:"structureWorker,omitempty"`
+	StructureCategory string `json:"structureCategory,omitempty"`
+	RuleSource        string `json:"ruleSource,omitempty"`
+}
+type SpecialWorker struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	RuleSource  string `json:"ruleSource"`
 }
 type Grape struct {
 	ID    string `json:"id"`
@@ -32,52 +43,71 @@ type Wine struct {
 	Value int    `json:"value"`
 }
 type Field struct {
-	Sold      bool   `json:"sold"`
-	Index     int    `json:"index"`
-	Capacity  int    `json:"capacity"`
-	Vines     []Card `json:"vines"`
-	Harvested bool   `json:"harvested"`
+	FruitDealer bool   `json:"fruitDealer,omitempty"`
+	Sold        bool   `json:"sold"`
+	Index       int    `json:"index"`
+	Capacity    int    `json:"capacity"`
+	Vines       []Card `json:"vines"`
+	Harvested   bool   `json:"harvested"`
+	Structure   string `json:"structure,omitempty"`
 }
 type Player struct {
-	Mama         Card           `json:"mama"`
-	Papa         Card           `json:"papa"`
-	PapaResolved bool           `json:"papaResolved"`
-	YokeUsed     bool           `json:"yokeUsed"`
-	ID           string         `json:"id"`
-	Name         string         `json:"name"`
-	Coins        int            `json:"coins"`
-	VP           int            `json:"vp"`
-	Income       int            `json:"income"`
-	Workers      int            `json:"workers"`
-	LargeWorker  bool           `json:"largeWorker"`
-	TotalWorkers int            `json:"totalWorkers"`
-	HandCount    int            `json:"handCount"`
-	HandCounts   map[string]int `json:"handCounts,omitempty"`
-	Fields       []Field        `json:"fields"`
-	Buildings    []string       `json:"buildings"`
-	Grapes       []Grape        `json:"grapes"`
-	Wines        []Wine         `json:"wines"`
-	Hand         []Card         `json:"hand,omitempty"`
-	Passed       bool           `json:"passed"`
-	Wake         int            `json:"wake"`
-	Trained      int            `json:"trained"`
-	MillUsed     bool           `json:"millUsed"`
-	TastingUsed  bool           `json:"tastingUsed"`
+	GrandeRemoved         bool            `json:"grandeRemoved,omitempty"`
+	GrayWorkerAvailable   bool            `json:"grayWorkerAvailable,omitempty"`
+	RhineSonField         *int            `json:"rhineSonField,omitempty"`
+	RhineWinterActionYear int             `json:"rhineWinterActionYear,omitempty"`
+	RhineWinterOfferYear  int             `json:"rhineWinterOfferYear,omitempty"`
+	MoorContracts         []Card          `json:"moorContracts,omitempty"`
+	Season                string          `json:"season,omitempty"`
+	NextWake              int             `json:"nextWake,omitempty"`
+	Influence             map[string]int  `json:"influence,omitempty"`
+	Mama                  Card            `json:"mama"`
+	Papa                  Card            `json:"papa"`
+	PapaResolved          bool            `json:"papaResolved"`
+	YokeUsed              bool            `json:"yokeUsed"`
+	ID                    string          `json:"id"`
+	Name                  string          `json:"name"`
+	Coins                 int             `json:"coins"`
+	VP                    int             `json:"vp"`
+	Income                int             `json:"income"`
+	Workers               int             `json:"workers"`
+	LargeWorker           bool            `json:"largeWorker"`
+	TotalWorkers          int             `json:"totalWorkers"`
+	HandCount             int             `json:"handCount"`
+	HandCounts            map[string]int  `json:"handCounts,omitempty"`
+	Fields                []Field         `json:"fields"`
+	Buildings             []string        `json:"buildings"`
+	StructureSlots        []string        `json:"structureSlots,omitempty"`
+	Grapes                []Grape         `json:"grapes"`
+	Wines                 []Wine          `json:"wines"`
+	Hand                  []Card          `json:"hand,omitempty"`
+	Passed                bool            `json:"passed"`
+	Wake                  int             `json:"wake"`
+	Trained               int             `json:"trained"`
+	MillUsed              bool            `json:"millUsed"`
+	TastingUsed           bool            `json:"tastingUsed"`
+	SpecialWorkers        []string        `json:"specialWorkers,omitempty"`
+	SpecialWorkerUsed     map[string]bool `json:"specialWorkerUsed,omitempty"`
+	SpecialWorkerReady    map[string]int  `json:"specialWorkerReady,omitempty"`
 }
 type Seat struct {
-	Slot     int    `json:"slot"`
-	PlayerID string `json:"playerId"`
-	Large    bool   `json:"large"`
+	Gray       bool   `json:"gray,omitempty"`
+	Season     string `json:"season,omitempty"`
+	Slot       int    `json:"slot"`
+	PlayerID   string `json:"playerId"`
+	Large      bool   `json:"large"`
+	WorkerType string `json:"workerType,omitempty"`
 }
 type Space struct {
-	Bonus          string `json:"bonus"`
-	DisabledReason string `json:"disabledReason"`
-	ID             string `json:"id"`
-	Name           string `json:"name"`
-	Description    string `json:"description"`
-	Season         string `json:"season"`
-	Occupied       []Seat `json:"occupied"`
-	Capacity       int    `json:"capacity"`
+	BonusSlots     map[int]string `json:"bonusSlots,omitempty"`
+	Bonus          string         `json:"bonus"`
+	DisabledReason string         `json:"disabledReason"`
+	ID             string         `json:"id"`
+	Name           string         `json:"name"`
+	Description    string         `json:"description"`
+	Season         string         `json:"season"`
+	Occupied       []Seat         `json:"occupied"`
+	Capacity       int            `json:"capacity"`
 }
 type WakeSlot struct {
 	Slot     int    `json:"slot"`
@@ -85,56 +115,80 @@ type WakeSlot struct {
 	Bonus    string `json:"bonus"`
 }
 type Room struct {
-	GrayWorkerOwner string             `json:"grayWorkerOwner"`
-	Planned         []PlannedPlacement `json:"planned,omitempty"`
-	Revealed        []Card             `json:"revealed,omitempty"`
-	Ruleset         string             `json:"ruleset"`
-	Decks           map[string][]Card  `json:"decks"`
-	Discards        map[string][]Card  `json:"discards"`
-	Choices         []Choice           `json:"choices"`
-	Context         *ActionContext     `json:"context"`
-	Resume          string             `json:"resume"`
-	WinnerIDs       []string           `json:"winnerIds"`
-	Revision        int                `json:"revision"`
-	Code            string             `json:"code"`
-	Phase           string             `json:"phase"`
-	Year            int                `json:"year"`
-	TurnID          string             `json:"turnId"`
-	HostID          string             `json:"hostId"`
-	Players         []*Player          `json:"players"`
-	Spaces          []Space            `json:"spaces"`
-	WakeSlots       []WakeSlot         `json:"wakeSlots"`
-	Log             []string           `json:"log"`
-	WinnerID        string             `json:"winnerId"`
-	SpringLeader    int                `json:"springLeader"`
-	FinalYear       bool               `json:"finalYear"`
-	Updated         time.Time          `json:"updated"`
+	GrayWorkerTracked bool               `json:"grayWorkerTracked,omitempty"`
+	FirstPlayerID     string             `json:"firstPlayerId,omitempty"`
+	Config            ExpansionConfig    `json:"config"`
+	GrayWorkerOwner   string             `json:"grayWorkerOwner"`
+	Planned           []PlannedPlacement `json:"planned,omitempty"`
+	Revealed          []Card             `json:"revealed,omitempty"`
+	Ruleset           string             `json:"ruleset"`
+	Decks             map[string][]Card  `json:"decks"`
+	Discards          map[string][]Card  `json:"discards"`
+	Choices           []Choice           `json:"choices"`
+	Context           *ActionContext     `json:"context"`
+	Resume            string             `json:"resume"`
+	WinnerIDs         []string           `json:"winnerIds"`
+	Revision          int                `json:"revision"`
+	Code              string             `json:"code"`
+	Phase             string             `json:"phase"`
+	Year              int                `json:"year"`
+	TurnID            string             `json:"turnId"`
+	HostID            string             `json:"hostId"`
+	Players           []*Player          `json:"players"`
+	Spaces            []Space            `json:"spaces"`
+	WakeSlots         []WakeSlot         `json:"wakeSlots"`
+	Log               []string           `json:"log"`
+	WinnerID          string             `json:"winnerId"`
+	SpringLeader      int                `json:"springLeader"`
+	FinalYear         bool               `json:"finalYear"`
+	SpecialWorkerPool []string           `json:"specialWorkerPool,omitempty"`
+	MessengerPlans    []PlannedPlacement `json:"messengerPlans,omitempty"`
+	// StructureDrafts is private, persisted setup state for EE + structures.
+	// Each player sees only the current pool through pendingChoice.Options.
+	StructureDrafts     map[string][]Card `json:"structureDrafts,omitempty"`
+	StructureDraftRound int               `json:"structureDraftRound,omitempty"`
+	Updated             time.Time         `json:"updated"`
 }
 type Action struct {
-	DeclineBonus bool     `json:"declineBonus"`
-	TargetIDs    []string `json:"targetIds"`
-	Buildings    []string `json:"buildings"`
-	Colors       []string `json:"colors"`
-	ChoiceID     string   `json:"choiceId"`
-	Option       string   `json:"option"`
-	CardIDs      []string `json:"cardIds"`
-	Color        string   `json:"color"`
-	Mode         string   `json:"mode"`
-	Recipes      [][]int  `json:"recipes"`
-	Fields       []int    `json:"fields"`
-	Revision     int      `json:"revision"`
-	Type         string   `json:"type"`
-	Slot         int      `json:"slot"`
-	Space        string   `json:"space"`
-	Large        bool     `json:"large"`
-	CardID       string   `json:"cardId"`
-	Field        int      `json:"field"`
-	Building     string   `json:"building"`
-	Grapes       []int    `json:"grapes"`
-	WineIDs      []string `json:"wineIds"`
+	WorkerID      string           `json:"workerId,omitempty"`
+	Gray          bool             `json:"gray,omitempty"`
+	RhineStars    []RhineStarMove  `json:"rhineStars,omitempty"`
+	BonusFirst    bool             `json:"bonusFirst,omitempty"`
+	Influence     []InfluenceMove  `json:"influence,omitempty"`
+	Trades        []Trade          `json:"trades,omitempty"`
+	Config        *ExpansionConfig `json:"config,omitempty"`
+	DeclineBonus  bool             `json:"declineBonus"`
+	TargetIDs     []string         `json:"targetIds"`
+	Buildings     []string         `json:"buildings"`
+	Colors        []string         `json:"colors"`
+	ChoiceID      string           `json:"choiceId"`
+	Option        string           `json:"option"`
+	CardIDs       []string         `json:"cardIds"`
+	Color         string           `json:"color"`
+	Mode          string           `json:"mode"`
+	RecipeTypes   []string         `json:"recipeTypes,omitempty"`
+	HarvestAll    bool             `json:"harvestAll,omitempty"`
+	Recipes       [][]int          `json:"recipes"`
+	Fields        []int            `json:"fields"`
+	Revision      int              `json:"revision"`
+	Type          string           `json:"type"`
+	Slot          int              `json:"slot"`
+	Space         string           `json:"space"`
+	Large         bool             `json:"large"`
+	CardID        string           `json:"cardId"`
+	Field         int              `json:"field"`
+	Building      string           `json:"building"`
+	Grapes        []int            `json:"grapes"`
+	GrapeID       string           `json:"grapeId,omitempty"`
+	GrapeIDs      []string         `json:"grapeIds,omitempty"`
+	WineIDs       []string         `json:"wineIds"`
+	WorkerType    string           `json:"workerType,omitempty"`
+	SpecialWorker string           `json:"specialWorker,omitempty"`
+	BonusOverride string           `json:"bonusOverride,omitempty"`
+	StructureSlot int              `json:"structureSlot,omitempty"`
 }
 
-var notes = []string{"EE 本体全卡验收版：2–6 人，76 张访客真实效果、多人响应、预约行动已接入；非官方认证。", "Planner 多个预约按预约先后执行；Organizer 在外层双访客结算后 pass。两项为本实现公开约定，特殊组合仍需进一步独立核对。", "固定藤42、订单36、Mama/Papa各18；有限牌堆、弃牌重洗和父母开局。原创主题插画部分共用。", "不支持 Tuscany、Automa 或旧预览存档迁移。仅用于可信局域网，不要公开存档或会话令牌。"}
+var notes = []string{"EE 本体全卡验收版：2–6 人，76 张访客真实效果、多人响应、预约行动已接入；非官方认证。", "EE/Tuscany 主板、36张结构牌、11种特殊工人及 EE、EE+Moor、Rhine 访客牌组可按开局配置组合。", "固定藤42、订单36、Mama/Papa各18；所有牌堆有限，抽空后只重洗对应弃牌堆。Rhine 替换其他访客，Tuscany 主板额外加入4张专用 Rhine 牌。原创主题插画部分共用。", "仅支持本项目可审计规则集；Automa、旧预览存档迁移不在当前可玩范围。仅用于可信局域网，不要公开存档或会话令牌。"}
 
 func NewID() string {
 	b := make([]byte, 16)
@@ -166,6 +220,9 @@ func (r *Room) AddLog(s string) {
 	r.Updated = time.Now()
 }
 func has(p *Player, b string) bool {
+	if p.hasStructure(b) {
+		return true
+	}
 	for _, s := range p.Buildings {
 		if s == b {
 			return true

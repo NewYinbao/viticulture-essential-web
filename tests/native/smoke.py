@@ -66,8 +66,8 @@ def main():
                 raise AssertionError("Unauthenticated state was accepted")
             except urllib.error.HTTPError as err:
                 assert err.code == 401
-            host = api("/api/create", {"name": "Native Smoke A"})
-            guest = api("/api/join", {"name": "Native Smoke B", "code": host["code"]})
+            host = api("/api/create", {"password": "test-password-123", "name": "Native Smoke A"})
+            guest = api("/api/join", {"password": "test-password-123", "name": "Native Smoke B", "code": host["code"]})
             assert guest["code"] == host["code"]
             state = api("/api/state", token=host["token"])
             assert state["phase"] == "lobby" and len(state["players"]) == 2

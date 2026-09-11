@@ -12,14 +12,19 @@ type Session struct {
 	PlayerID string `json:"playerId"`
 }
 type Store struct {
-	Rooms    map[string]*game.Room
-	Sessions map[string]Session
+	Rooms     map[string]*game.Room
+	Sessions  map[string]Session
+	Passwords map[string]PasswordRecord
 }
 type App struct {
-	mu    sync.Mutex
-	Store Store
-	dir   string
-	subs  map[chan struct{}]string
+	mu             sync.Mutex
+	Store          Store
+	dir            string
+	subs           map[chan struct{}]string
+	authMu         sync.Mutex
+	authAttempts   map[string]authAttempt
+	authSlots      chan struct{}
+	enrollmentKeys map[string]string
 }
 
 func loadApp(dir string) (*App, error) {
@@ -29,6 +34,19 @@ func loadApp(dir string) (*App, error) {
 	}
 	if a.Store.Rooms == nil || a.Store.Sessions == nil {
 		return nil, fmt.Errorf("invalid save")
+	}
+	if a.Store.Passwords == nil {
+		a.Store.Passwords = make(map[string]PasswordRecord)
+	}
+	a.authAttempts = make(map[string]authAttempt)
+	a.authSlots = make(chan struct{}, 2)
+	a.enrollmentKeys = make(map[string]string)
+	for _, room := range a.Store.Rooms {
+		for _, player := range room.Players {
+			if _, protected := a.Store.Passwords[player.ID]; !protected {
+				a.enrollmentKeys[player.ID] = game.NewID()[:12]
+			}
+		}
 	}
 	return a, nil
 }

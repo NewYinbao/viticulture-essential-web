@@ -8,6 +8,12 @@ import (
 // Hints are conservative, read-only prerequisites. They never execute an action,
 // draw a card, or predict a random result; Apply remains authoritative.
 func (r *Room) visitorOptionReason(p *Player, s *VisitorStep, option string) string {
+	if isRhine(s.CardID) {
+		return r.rhineOptionReason(p, s, option)
+	}
+	if isMoor(s.CardID) {
+		return r.moorOptionReason(p, s, option)
+	}
 	if option == "skip" || s.Stage == "reward" {
 		return ""
 	}
@@ -161,10 +167,10 @@ func (r *Room) visitorOptionReason(p *Player, s *VisitorStep, option string) str
 func (r *Room) cardReason(p *Player, c Card) string {
 	switch c.Type {
 	case "vine":
-		if c.Trellis && !has(p, "trellis") {
+		if c.Trellis && !has(p, "trellis") && !has(p, "aqueduct") {
 			return "需要棚架"
 		}
-		if c.Irrigation && !has(p, "irrigation") {
+		if c.Irrigation && !has(p, "irrigation") && !has(p, "aqueduct") {
 			return "需要灌溉"
 		}
 		q := probePlayer(p)
@@ -213,15 +219,35 @@ func (r *Room) availability(id string) (map[string]string, map[string]string, ma
 		}
 		return actions, cards, options
 	}
-	if r.TurnID != id || (r.Phase != "summer" && r.Phase != "winter") {
+	if r.TurnID != id || !r.actionSeason() {
 		return actions, cards, options
 	}
 	for _, c := range p.Hand {
 		cards[c.ID] = r.cardReason(p, c)
 	}
+	if r.tuscany() {
+		for _, s := range r.Spaces {
+			if s.Season != r.Phase || (s.ID != "summer_visitor" && s.ID != "winter_visitor") {
+				continue
+			}
+			for slot := 1; slot <= s.Capacity; slot++ {
+				if _, _, e := placement(&s, p, Action{Slot: slot}); e != nil || s.BonusSlots[slot] != "coin" {
+					continue
+				}
+				q := probePlayer(p)
+				q.Coins++
+				for _, c := range p.Hand {
+					if visitorInSeason(q, c.ID, strings.TrimSuffix(s.ID, "_visitor")) && r.cardReason(q, c) == "" {
+						cards[c.ID] = ""
+					}
+				}
+			}
+		}
+	}
 	for i := range r.Spaces {
 		s := &r.Spaces[i]
-		if s.Season != r.Phase && s.Season != "any" {
+		placements := r.workerPlacements(p, s)
+		if s.Season != r.Phase && s.Season != "any" && len(placements) == 0 {
 			continue
 		}
 		reason := ""
@@ -230,12 +256,30 @@ func (r *Room) availability(id string) (map[string]string, map[string]string, ma
 			large = true
 		}
 		_, bonus, err := placement(s, p, Action{Large: large})
+		// Tuscany bonuses are per physical slot, not the first auto-selected slot.
+		// The action-level hint remains permissive if ANY reachable slot works.
+		if r.tuscany() && (s.ID == "build" || s.ID == "train") {
+			bonus = false
+			for slot := 1; slot <= s.Capacity; slot++ {
+				if _, _, e := placement(s, p, Action{Large: large, Slot: slot}); e == nil && s.BonusSlots[slot] == "discount" {
+					bonus = true
+				}
+			}
+		}
 		if p.Workers == 0 && !p.LargeWorker {
 			reason = "没有待命工人"
 		} else if err != nil {
 			reason = err.Error()
 		} else if large && !p.LargeWorker {
 			reason = "普通格已满，大工人已使用"
+		}
+		if len(placements) > 0 {
+			reason = ""
+			for _, candidate := range placements {
+				bonus = bonus || candidate.Bonus
+			}
+		} else if reason == "" {
+			reason = "没有可进入的行动格，检查工人和通行费"
 		}
 		if reason == "" {
 			discount := 0
@@ -248,10 +292,25 @@ func (r *Room) availability(id string) (map[string]string, map[string]string, ma
 					reason = "没有可负担的未建建筑"
 				}
 			case "train":
+				trainingCost := 4
+				for i, candidate := range placements {
+					cost := 4 + candidate.Toll
+					if candidate.Bonus || candidate.WorkerType == "farmer" {
+						cost--
+					}
+					if i == 0 || cost < trainingCost {
+						trainingCost = cost
+					}
+				}
+				for _, other := range r.Players {
+					if other.ID != p.ID && has(other, "academy") {
+						trainingCost++
+					}
+				}
 				if p.TotalWorkers >= 6 {
 					reason = "工人已达 6 名上限"
-				} else if p.Coins < 4-discount {
-					reason = fmt.Sprintf("还差 %d 金币", 4-discount-p.Coins)
+				} else if p.Coins < trainingCost {
+					reason = fmt.Sprintf("还差 %d 金币", trainingCost-p.Coins)
 				}
 			case "plant":
 				if !r.canPlantVisitor(p, false, false) {
@@ -269,11 +328,25 @@ func (r *Room) availability(id string) (map[string]string, map[string]string, ma
 				if !r.canFillVisitor(p) {
 					reason = "现有酒未满足订单"
 				}
+			case "sell_wine":
+				if len(p.Wines) == 0 {
+					reason = "没有可出售的葡萄酒"
+				}
+			case "flip_field":
+				possible := false
+				for _, f := range p.Fields {
+					if (!f.Sold && len(f.Vines) == 0 && f.Structure == "") || (f.Sold && p.Coins >= f.Capacity) {
+						possible = true
+					}
+				}
+				if !possible {
+					reason = "没有可买卖的田地"
+				}
 			case "summer_visitor", "winter_visitor":
 				typ := strings.TrimSuffix(s.ID, "_visitor")
 				found := false
 				for _, c := range p.Hand {
-					if c.Type == typ && cards[c.ID] == "" {
+					if visitorInSeason(p, c.ID, typ) && cards[c.ID] == "" {
 						found = true
 					}
 				}

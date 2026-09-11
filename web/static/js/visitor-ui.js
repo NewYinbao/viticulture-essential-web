@@ -1,3 +1,7 @@
+import { renderMoorField, cardMatchesSeason } from './moor-ui.js';
+import { renderRhineField } from './rhine-ui.js';
+import { bonusKey, bonusLabel, bonusNames } from './action-options.js';
+import { tuscanyInputState, renderTuscanyInputs } from './tuscany-inputs.js';
 import { cardInfo, localCard } from './card-i18n.js';
 import { hint, optionResourceReason } from './hints.js';
 import { visitorLabel } from './visitor-labels.js';
@@ -89,7 +93,13 @@ const buildings = {
   windmill: ['磨坊', 5],
   tasting_room: ['品酒室', 6],
 };
-const field = (name, type, min = 1, max = 1, filter = '') => ({ name, type, min, max, filter });
+const field = (name, type, min = 1, max = 1, filter = '') => ({
+  name,
+  type,
+  min,
+  max,
+  filter,
+});
 const card = (n, filter = '') => field('cardIds', 'cards', n, n, filter);
 const wine = (minValue = 1) => ({ ...field('wineIds', 'wines'), minValue });
 const plant = (max = 1) => field('plant', 'plant', 1, max);
@@ -173,9 +183,32 @@ export function choiceFields(c, option) {
   if (id === 'summer-11' && stage === 'plant') out = [{ ...plant(), min: 0 }];
   if (id === 'summer-32') out = [field('seats', 'seats', 1, 2)];
   if (id === 'winter-19')
-    out = [{ ...field('colors', 'colors', 2, 2), options: ['vine', 'summer', 'order', 'winter'] }];
+    out = [
+      {
+        ...field('colors', 'colors', 2, 2),
+        options: ['vine', 'summer', 'order', 'winter'],
+      },
+    ];
   if (id === 'winter-37' && stage === 'take') out = [field('revealed', 'revealed', 2, 2)];
   if (id === 'winter-32') out = [field('manager', 'manager')];
+  const trainingPrices = {
+    'winter-07': 0,
+    'winter-08': 2,
+    'winter-13': 2,
+    'winter-23': 3,
+    'winter-31': 3,
+    'winter-38': 1,
+  };
+  if (
+    trainingPrices[id] != null &&
+    (option === 'train' || (id === 'winter-23' && option === 'train_draw'))
+  ) {
+    out.push({
+      ...field('specialWorker', 'trainingWorker'),
+      cost: trainingPrices[id],
+      now: id === 'winter-31',
+    });
+  }
   // Older server emits broad schema for all branches; only a field-specific server schema
   // may replace a mapped field. New optionFields is preferred above.
   const schema = c.schema || c.fields || [];
@@ -198,9 +231,29 @@ export function buildingCost(c, price) {
       }[id] || 0),
   );
 }
-export function visitorCost(c, option, p) {
+// Shared by the choice controls and contextual rules. Only the current private
+// choice is accepted; do not reconstruct another player's card or branch.
+export function visitorOptionText(c, option, p) {
+  return (
+    c.labels?.[option] ||
+    visitorLabel(c, option, p) ||
+    (c.visitor?.cardId === 'winter-11' && c.visitor?.stage === 'reply'
+      ? {
+          vp: '失去 1 胜利分',
+          cards: '给出牌者 2 张手牌',
+          coins: '付出牌者 3 金币',
+        }[option]
+      : null) ||
+    names[option] ||
+    option
+  );
+}
+export function visitorCost(c, option, p, view) {
+  const tuscany = view?.config?.board === 'tuscany';
   if (c.kind === 'planner')
-    return '冬初执行原预约格行动及格奖励，不再消耗工人；培训原价 4 金币（奖励格减 1），其他行动按通常规则结算。';
+    return tuscany
+      ? '进入预约季节后执行原格行动，不再消耗工人；行动与逐格奖励按Tuscany主板结算，仍须支付费用。'
+      : '冬初执行原预约格行动及格奖励，不再消耗工人；培训原价 4 金币（奖励格减 1），其他行动按通常规则结算。';
   const id = c.visitor?.cardId,
     stage = c.visitor?.stage,
     first = option === 'both' ? (id === 'summer-28' ? 'build' : 'draw') : option.split('_')[0],
@@ -215,11 +268,15 @@ export function visitorCost(c, option, p) {
     notes.push('本步骤先失去 1 胜利分；后续步骤不重复扣分');
   if (id === 'summer-29')
     notes.push(
-      '现在额外消耗 1 名可用工人并占住冬季格；现在不执行、不收费、不拿奖励。冬初再选择酿酒、订单等参数并支付行动费用；不可执行时耗尽预约且不退工人',
+      tuscany
+        ? '现在额外消耗1名可用工人，预约允许的秋季或冬季格；现在不执行、不收费、不领奖，进入预约季节时再补参数并支付费用。'
+        : '现在额外消耗 1 名可用工人并占住冬季格；现在不执行、不收费、不拿奖励。冬初再选择酿酒、订单等参数并支付行动费用；不可执行时耗尽预约且不退工人',
     );
   if (id === 'summer-33')
     notes.push(
-      '免费移到空起床行：1 无奖励；2 抽1藤；3 抽1订单；4 得1金币；5 抽1张所选夏/冬访客；6 得1胜利分；7 仅当唯一灰工人尚未领取时获得本年临时工人。本次外层剩余访客结算后结束本季',
+      tuscany
+        ? '迁移起床行，按Tuscany当前季奖励结算；仍需完成奖励和外层剩余访客，再结束本季。允许的起床行以当前选择为准。'
+        : '免费移到空起床行：1 无奖励；2 抽1藤；3 抽1订单；4 得1金币；5 抽1张所选夏/冬访客；6 得1胜利分；7 仅当唯一灰工人尚未领取时获得本年临时工人。本次外层剩余访客结算后结束本季',
     );
   if (id === 'winter-11')
     notes.push(
@@ -249,9 +306,10 @@ export function visitorCost(c, option, p) {
 function compatibleFilter(card, filter, v) {
   return (
     !filter ||
-    filter === card.type ||
+    cardMatchesSeason(card, filter, v.config) ||
     (filter === 'visitors' && ['summer', 'winter'].includes(card.type)) ||
-    (filter === 'season' && card.type === (v.phase === 'winter' ? 'winter' : 'summer'))
+    (filter === 'season' &&
+      cardMatchesSeason(card, v.phase === 'winter' ? 'winter' : 'summer', v.config))
   );
 }
 function normalize(f) {
@@ -274,13 +332,18 @@ function normalize(f) {
   };
   return {
     ...f,
-    type: f.type === 'placementSlot' ? f.type : aliases[f.name] || f.type,
+    type:
+      f.type === 'placementSlot' || f.type?.startsWith('moor') || f.type?.startsWith('rhine_')
+        ? f.type
+        : aliases[f.name] || f.type,
     min: f.min ?? 1,
     max: f.max ?? 1,
   };
 }
 export function renderVisitor(box, v, act, online) {
   const c = v.pendingChoice;
+  if (c?.visitor?.cardId?.startsWith('rhine-') && v.config?.visitors !== 'rhine') return false;
+  if (c?.visitor?.cardId?.startsWith('moor-') && v.config?.visitors !== 'ee_moor') return false;
   if (!c?.visitor && !['visitor', 'planner'].includes(c?.kind)) {
     draft = null;
     return false;
@@ -303,7 +366,9 @@ export function renderVisitor(box, v, act, online) {
   const reasons = Object.fromEntries(
     (c.options || []).map((option) => [
       option,
-      v.optionReasons?.[option] || optionResourceReason(v, c, choiceFields(c, option)),
+      c.visitor?.cardId?.startsWith('rhine-')
+        ? v.optionReasons?.[option] || ''
+        : v.optionReasons?.[option] || optionResourceReason(v, c, choiceFields(c, option)),
     ]),
   );
   const firstAvailable =
@@ -320,7 +385,7 @@ export function renderVisitor(box, v, act, online) {
   }
   const p = v.players.find((p) => p.id === v.youId),
     info = cardInfo(c.visitor?.cardId),
-    title = node('h3', info?.name || '访客后续行动');
+    title = node('h3', c.title || info?.name || '访客后续行动');
   box.append(title);
   const details = node('details', null, 'visitor-details');
   details.append(node('summary', '效果与费用'));
@@ -329,6 +394,7 @@ export function renderVisitor(box, v, act, online) {
       node('small', info.englishName, 'card-english'),
       node('p', info.description, 'visitor-rules'),
     );
+  if (c.description) details.append(node('p', c.description, 'visitor-rules'));
   box.append(details);
   box.append(
     node(
@@ -352,7 +418,7 @@ export function renderVisitor(box, v, act, online) {
       'visitor-stage',
     ),
   );
-  const cost = visitorCost(c, d.option, p);
+  const cost = visitorCost(c, d.option, p, v);
   if (cost) details.append(node('p', cost, 'visitor-cost'));
   const options = node('div', null, 'visitor-options');
   options.setAttribute('role', 'group');
@@ -362,17 +428,7 @@ export function renderVisitor(box, v, act, online) {
     if (draft === d) renderVisitor(d.box, d.view, act, d.online);
   };
   for (const option of c.options || []) {
-    const b = node(
-      'button',
-      c.labels?.[option] ||
-        visitorLabel(c, option, p) ||
-        (c.visitor?.cardId === 'winter-11' && c.visitor?.stage === 'reply'
-          ? { vp: '失去 1 胜利分', cards: '给出牌者 2 张手牌', coins: '付出牌者 3 金币' }[option]
-          : null) ||
-        names[option] ||
-        option,
-      d.option === option ? 'primary' : '',
-    );
+    const b = node('button', visitorOptionText(c, option, p), d.option === option ? 'primary' : '');
     b.type = 'button';
     b.dataset.visitorOption = option;
     b.setAttribute('aria-pressed', String(d.option === option));
@@ -401,61 +457,169 @@ export function renderVisitor(box, v, act, online) {
     fields = choiceFields(c, d.option).map(normalize);
   let unsupported = false;
   let refreshReady = () => {};
-  if (c.kind === 'planner') {
-    const plan = v.planned?.[0],
-      sp = (v.spaces || []).find((x) => x.id === plan?.space);
-    controls.append(node('h4', '冬初预约：' + (sp?.name || '预约信息缺失')));
-    if (!sp || plan.playerId !== v.youId) {
-      unsupported = true;
-      controls.append(
-        node(
-          'p',
-          '服务器未提供有效的公开预约 planned；无法安全推断行动，请更新后端。',
-          'ee-warning',
-        ),
-      );
-    }
-    const bonus = plan?.slot === 1 && sp?.capacity >= 2;
-    const label = node('label', '放弃行动格奖励（仍执行行动）'),
-      decline = node('input');
-    decline.type = 'checkbox';
-    decline.name = 'declineBonus';
-    decline.checked = !!d.values.declineBonus;
-    decline.onchange = () => {
-      d.values.declineBonus = decline.checked;
+  const tuscany = v.config?.board === 'tuscany';
+  if (tuscany && c.visitor?.cardId === 'summer-33') {
+    const color = fields.findIndex((f) => f.name === 'color');
+    if (color >= 0) fields.splice(color, 1); // The actual season reward owns its own saved choice.
+  }
+  function actionFields(space, key = '') {
+    const modes = (entries, fallback) => {
+      if (!entries.some(([id]) => id === d.values.mode)) d.values.mode = fallback;
+      const row = node('div', null, 'visitor-options');
+      controls.append(row);
+      for (const [id, label] of entries) {
+        const button = node('button', label, d.values.mode === id ? 'primary' : '');
+        button.type = 'button';
+        button.dataset.subactionMode = id;
+        button.onclick = () => {
+          d.values.mode = id;
+          rerender();
+        };
+        row.append(button);
+      }
+      readers.push((a) => (a.mode = d.values.mode));
+      return d.values.mode;
     };
-    label.prepend(decline);
-    controls.append(label);
-    readers.push((a) => (a.declineBonus = decline.checked));
-    readers.push((a) => (a.space = plan.space));
-    switch (plan?.space) {
+    switch (space) {
+      case 'influence':
+      case 'trade':
+        fields.push(field(space, 'tuscany-resource'));
+        break;
+      case 'sell_wine':
+        fields.push(wine());
+        break;
+      case 'build_tour':
+        if (
+          modes(
+            [
+              ['tour', '导览'],
+              ['build', '建造固定建筑'],
+            ],
+            'tour',
+          ) === 'build'
+        )
+          fields.push({ ...build(), discount: key === 'build_tour' ? 1 : 0 });
+        break;
+      case 'build':
+        fields.push({
+          ...build(),
+          type: c.visitor?.cardId === 'rhine-winter-virtuoso' ? 'rhine_build' : 'building',
+          discount: key === 'discount' ? 1 : 0,
+        });
+        break;
+      case 'plant':
+        fields.push(plant(key === 'plant' ? 2 : 1));
+        break;
       case 'harvest':
-        fields.push({ ...harvest(bonus ? 2 : 1), min: 1 });
+        fields.push(harvest(key === 'harvest' ? 2 : 1));
         break;
       case 'make_wine':
-        fields.push({ ...make(bonus ? 3 : 2), min: 1 });
+        fields.push(make(key === 'make_wine' ? 3 : 2));
         break;
       case 'fill_order':
         fields.push(...fill());
         break;
+      case 'summer_visitor':
       case 'winter_visitor':
-        fields.push(field('cardId', 'cards', 1, 1, 'winter'));
+        fields.push(field('cardId', 'cards', 1, 1, space.replace('_visitor', '')));
         break;
+      case 'sell_grapes':
+      case 'flip_field': {
+        const entries = [
+          ['sell_field', '出售空田'],
+          ['buy_field', '买回田地'],
+        ];
+        if (space === 'sell_grapes') entries.unshift(['sell_grapes', '出售葡萄']);
+        const mode = modes(entries, entries[0][0]);
+        fields.push(
+          mode === 'sell_grapes'
+            ? field('grapes', 'grapes', 1, p.grapes.length)
+            : field('tradeField', 'tradeField'),
+        );
+        break;
+      }
       case 'draw_order':
+      case 'draw_vine':
+      case 'tour':
+        break;
       case 'train':
+        fields.push({
+          ...field('specialWorker', 'trainingWorker'),
+          cost: key === 'discount' ? 3 : 4,
+        });
         break;
       default:
         unsupported = true;
     }
   }
-  if (fields.some((f) => f.type === 'manager')) {
-    const summer = (v.spaces || []).filter((x) => x.season === 'summer');
-    if (!summer.some((x) => x.id === d.values.space)) d.values.space = summer[0]?.id || '';
+  if (c.kind === 'planner') {
+    const plan = v.planned?.[0],
+      sp = (v.spaces || []).find((x) => x.id === plan?.space);
+    controls.append(
+      node('h4', (tuscany ? '季初预约：' : '冬初预约：') + (sp?.name || '预约信息缺失')),
+    );
+    if (!sp || plan.playerId !== v.youId) {
+      unsupported = true;
+      controls.append(node('p', '服务器未提供有效的公开预约；不能推断私有行动。', 'ee-warning'));
+    } else {
+      const label = node('label', '放弃行动格奖励（仍执行行动）'),
+        decline = node('input');
+      decline.type = 'checkbox';
+      decline.name = 'declineBonus';
+      decline.checked = !!d.values.declineBonus;
+      decline.onchange = () => {
+        d.values.declineBonus = decline.checked;
+        rerender();
+      };
+      label.prepend(decline);
+      controls.append(label, node('p', '预约第' + plan.slot + '格：' + bonusLabel(sp, plan.slot)));
+      readers.push((a) => {
+        a.declineBonus = !!d.values.declineBonus;
+        a.space = plan.space;
+      });
+      const key = c.specialBonus || bonusKey(sp, plan.slot, !!d.values.declineBonus);
+      if (key === 'coin') {
+        const firstLabel = node('label', '先领取1金币，再执行预约'),
+          first = node('input');
+        first.type = 'checkbox';
+        first.name = 'bonusFirst';
+        first.checked = !!d.values.bonusFirst;
+        first.onchange = () => {
+          d.values.bonusFirst = first.checked;
+          refreshReady();
+        };
+        firstLabel.prepend(first);
+        controls.append(firstLabel);
+        readers.push((a) => (a.bonusFirst = !!d.values.bonusFirst));
+      }
+      actionFields(plan.space, key);
+    }
+  }
+  if (fields.some((f) => f.type === 'manager' || f.type === 'rhine_virtuoso')) {
+    const virtuoso = fields.some((f) => f.type === 'rhine_virtuoso');
+    const seasons = ['spring', 'summer', 'fall', 'winter'];
+    const earlier = (v.spaces || []).filter((x) =>
+      tuscany
+        ? seasons.indexOf(x.season) >= 0 && seasons.indexOf(x.season) < seasons.indexOf(v.phase)
+        : x.season === 'summer',
+    );
+    if (!earlier.some((x) => x.id === d.values.space)) d.values.space = earlier[0]?.id || '';
     const row = node('div', null, 'visitor-options');
-    controls.append(node('h4', '不放工人执行夏季行动（无行动格奖励）'), row);
-    for (const sp of summer) {
+    controls.append(
+      node(
+        'h4',
+        virtuoso
+          ? '选择前季行动和奖励'
+          : tuscany
+            ? '不放工人执行前季行动（无格奖励）'
+            : '不放工人执行夏季行动（无格奖励）',
+      ),
+      row,
+    );
+    for (const sp of earlier) {
       const b = node('button', sp.name, d.values.space === sp.id ? 'primary' : '');
       b.type = 'button';
+      b.dataset.managerSpace = sp.id;
       b.onclick = () => {
         d.values = { space: sp.id };
         rerender();
@@ -463,45 +627,39 @@ export function renderVisitor(box, v, act, online) {
       row.append(b);
     }
     readers.push((a) => (a.space = d.values.space));
-    fields.splice(0, fields.length);
-    switch (d.values.space) {
-      case 'build':
-        fields.push(build());
-        break;
-      case 'plant':
-        fields.push(plant());
-        break;
-      case 'summer_visitor':
-        fields.push(field('cardId', 'cards', 1, 1, 'summer'));
-        break;
-      case 'sell_grapes':
-        {
-          const modes = [
-            ['sell_grapes', '出售葡萄'],
-            ['sell_field', '出售空田'],
-            ['buy_field', '买回田地'],
-          ];
-          d.values.mode ??= 'sell_grapes';
-          const modeRow = node('div', null, 'visitor-options');
-          controls.append(modeRow);
-          for (const [id, label] of modes) {
-            const b = node('button', label, d.values.mode === id ? 'primary' : '');
-            b.type = 'button';
-            b.onclick = () => {
-              d.values = { space: d.values.space, mode: id };
-              rerender();
-            };
-            modeRow.append(b);
-          }
-          readers.push((a) => (a.mode = d.values.mode));
-          fields.push(
-            d.values.mode === 'sell_grapes'
-              ? field('grapes', 'grapes', 1, p.grapes.length)
-              : field('tradeField', 'tradeField'),
-          );
-        }
-        break;
+    let selectedBonus = '';
+    if (virtuoso) {
+      const space = earlier.find((s) => s.id === d.values.space);
+      const items = space
+        ? [0, 1, 2, 3]
+            .map((slot) => [slot, slot ? bonusKey({ ...space, capacity: 3 }, slot) : ''])
+            .filter(([slot, key]) => !slot || key)
+        : [];
+      if (!items.some(([slot]) => slot === d.values.virtuosoSlot))
+        d.values.virtuosoSlot = items.find(([slot]) => slot > 0)?.[0] || 0;
+      const bonuses = node('div', null, 'visitor-options');
+      controls.append(bonuses);
+      for (const [slot, key] of items) {
+        const b = node(
+          'button',
+          key ? bonusNames[key] || key : '不领取奖励',
+          d.values.virtuosoSlot === slot ? 'primary' : '',
+        );
+        b.type = 'button';
+        b.onclick = () => {
+          d.values.virtuosoSlot = slot;
+          rerender();
+        };
+        bonuses.append(b);
+      }
+      selectedBonus = items.find(([slot]) => slot === d.values.virtuosoSlot)?.[1] || '';
+      readers.push((a) => {
+        a.slot = d.values.virtuosoSlot;
+        a.declineBonus = !a.slot;
+      });
     }
+    fields.splice(0, fields.length);
+    actionFields(d.values.space, selectedBonus);
   }
 
   // Clear only visitor bindings; annual discard has its own independent lifecycle.
@@ -548,11 +706,11 @@ export function renderVisitor(box, v, act, online) {
         );
       refreshReady();
     };
-    for (const [val, text, reason] of items) {
+    for (const [val, text, reason, description] of items) {
       const b = node('button', text, 'resource-chip');
       b.type = 'button';
       b.dataset.value = String(val);
-      hint(b, reason || '选择这项资源', !!reason);
+      hint(b, reason || description || '选择这项资源', !!reason);
       b.onclick = () => {
         if (reason) return;
         if (multi) {
@@ -595,6 +753,8 @@ export function renderVisitor(box, v, act, online) {
     const eligible = (v.hand || []).filter(
       (x) =>
         compatibleFilter(x, f.filter, v) &&
+        (!f.allowedIds || f.allowedIds.includes(x.id)) &&
+        (!f.irrigationOnly || x.irrigation) &&
         (!(f.name === 'cardId' && ['season', 'summer', 'winter'].includes(f.filter)) ||
           x.implemented),
     );
@@ -663,7 +823,31 @@ export function renderVisitor(box, v, act, online) {
   }
   for (const f of fields) {
     const multi = !['field', 'cardId', 'building'].includes(f.name);
-    if (f.type === 'cards') {
+    if (renderMoorField(f, { v, p, c, controls, chooser, readers, validators })) {
+    } else if (
+      renderRhineField(f, {
+        p,
+        v,
+        d,
+        controls,
+        readers,
+        validators,
+        rerender,
+        node,
+        chooser,
+        online,
+      })
+    ) {
+    } else if (f.type === 'tuscany-resource') {
+      d.values.tuscany ??= {};
+      const state = tuscanyInputState(f.name, v, d.values.tuscany);
+      renderTuscanyInputs(controls, state, d.values.tuscany, online && !d.busy, rerender);
+      validators.push(() => {
+        const state = tuscanyInputState(f.name, v, d.values.tuscany);
+        if (state.reason) throw Error(state.reason);
+      });
+      readers.push((a) => Object.assign(a, tuscanyInputState(f.name, v, d.values.tuscany).payload));
+    } else if (f.type === 'cards') {
       const read = handSelect(f);
       readers.push((a) => (a[f.name] = f.name === 'cardId' ? read()[0] : read()));
     } else if (f.type === 'plant') {
@@ -743,7 +927,17 @@ export function renderVisitor(box, v, act, online) {
             id: sp.id + ':' + x.slot,
             space: sp.id,
             slot: x.slot,
-            label: sp.name + ' · ' + (x.large ? '大工人' : '普通工人') + ' · 格 ' + x.slot,
+            label:
+              sp.name +
+              ' · ' +
+              (x.workerType
+                ? (v.specialWorkerCatalog || []).find((w) => w.id === x.workerType)?.name ||
+                  x.workerType
+                : x.large
+                  ? '大工人'
+                  : '普通工人') +
+              ' · 格 ' +
+              x.slot,
           })),
       );
       const read = chooser(
@@ -769,6 +963,12 @@ export function renderVisitor(box, v, act, online) {
       );
       readers.push((a) => (a.field = Number(read())));
     } else if (f.type === 'fields') {
+      const all = p.buildings.includes('harvest_machine')
+        ? select('harvestAll', '收割机', [
+            ['', '选择田地'],
+            ['all', '收获所有田地'],
+          ])
+        : () => '';
       const read = chooser(
         f.name,
         '选择可收获田地',
@@ -779,7 +979,14 @@ export function renderVisitor(box, v, act, online) {
         f.min,
         f.max,
       );
-      readers.push((a) => (a[f.name] = multi ? read().map(Number) : Number(read())));
+      readers.push((a) => {
+        if (all() === 'all') {
+          a.harvestAll = true;
+          a.fields = p.fields
+            .filter((x) => !x.sold && !x.harvested && x.vines?.length)
+            .map((x) => x.index);
+        } else a[f.name] = multi ? read().map(Number) : Number(read());
+      });
     } else if (f.type === 'wines') {
       const read = chooser(
         f.name,
@@ -796,7 +1003,11 @@ export function renderVisitor(box, v, act, online) {
       const read = chooser(
         f.name,
         '选择葡萄',
-        p.grapes.map((x, i) => [i, (names[x.color] || x.color) + ' · 品质 ' + x.value]),
+        p.grapes.map((x, i) => [
+          i,
+          (names[x.color] || x.color) + ' · 品质 ' + x.value,
+          f.allowedIds && !f.allowedIds.includes(x.id) ? '本次只能陈酿最初选定的葡萄' : '',
+        ]),
         true,
         f.min,
         f.max,
@@ -815,7 +1026,11 @@ export function renderVisitor(box, v, act, online) {
               (isMulti || id !== 'large_cellar' || p.buildings.includes('medium_cellar')),
           )
           .map(([id, b]) => {
-            const cost = buildingCost(c, b[1]);
+            const cost = Math.max(
+              0,
+              (f.discount != null ? b[1] - f.discount : buildingCost(c, b[1])) -
+                Number(p.buildings.includes('workshop')),
+            );
             const reason = cost > p.coins ? `还差 ${cost - p.coins} 金币` : '';
             return [id, b[0] + ' · ' + cost + ' 金币', reason];
           }),
@@ -851,6 +1066,14 @@ export function renderVisitor(box, v, act, online) {
           '红/白：单颗；桃红：一红一白且总值≥4；起泡：两红一白且总值≥7。酒窖与空槽由服务器检查。',
         ),
       );
+      const typeReaders = p.buildings.includes('charmat')
+        ? Array.from({ length: f.max }, (_, i) =>
+            select('recipeType-' + (i + 1), '第 ' + (i + 1) + ' 瓶 · 查玛法罐', [
+              ['', '常规配方'],
+              ['sparkling', '红白各一 → 起泡'],
+            ]),
+          )
+        : [];
       const picks = p.grapes.map((g, i) =>
         select('recipe-' + (g.id || i), (names[g.color] || g.color) + '葡萄 · 品质 ' + g.value, [
           ['', '保留'],
@@ -864,6 +1087,7 @@ export function renderVisitor(box, v, act, online) {
           if (val) (groups[val] ??= []).push(i);
         });
         a.recipes = Object.values(groups);
+        a.recipeTypes = Object.keys(groups).map((key) => typeReaders[Number(key) - 1]?.() || '');
         if (a.recipes.length < f.min || a.recipes.length > f.max) throw Error('酿酒瓶数不符合要求');
         for (const r of a.recipes) {
           const red = r.filter((i) => p.grapes[i].color === 'red').length,
@@ -896,7 +1120,7 @@ export function renderVisitor(box, v, act, online) {
     } else if (f.type === 'placementSlot') {
       const read = select('slot', '预约行动格', [
         [0, '自动选择空格'],
-        [1, '第1格（3人以上为奖励格）'],
+        [1, tuscany ? '第1格（奖励见主板逐格说明）' : '第1格（3人以上为奖励格）'],
         [2, '第2格'],
         [3, '第3格'],
         [-1, '满格时大工人溢出（无奖励）'],
@@ -907,7 +1131,12 @@ export function renderVisitor(box, v, act, online) {
         f.name,
         '选择空起床行',
         (v.wakeSlots || [])
-          .filter((x) => !v.players.some((p) => p.wake === x.slot))
+          .filter(
+            (x) =>
+              !v.players.some(
+                (p) => (tuscany && p.season === 'ready' ? p.nextWake : p.wake) === x.slot,
+              ),
+          )
           .map((x) => [x.slot, '第 ' + x.slot + ' 行 · ' + x.bonus]),
       );
       readers.push((a) => (a[f.name] = Number(read())));
@@ -916,16 +1145,95 @@ export function renderVisitor(box, v, act, online) {
         f.name,
         '选择行动',
         (v.spaces || [])
-          .filter((x) => (f.options ? f.options.includes(x.id) : x.season === 'winter'))
+          .filter((x) =>
+            f.options
+              ? f.options.includes(x.id)
+              : tuscany
+                ? ['fall', 'winter'].includes(x.season)
+                : x.season === 'winter',
+          )
           .map((x) => [x.id, x.name]),
       );
       readers.push((a) => (a[f.name] = read()));
     } else if (f.type === 'worker') {
+      const readySpecial = v.config?.specialWorkers
+        ? (p.specialWorkers || []).filter(
+            (id) =>
+              !p.specialWorkerUsed?.[id] &&
+              (p.specialWorkerReady?.[id] || 0) <= (v.year || 0) &&
+              (v.specialWorkerPool || []).includes(id),
+          )
+        : [];
       const read = chooser(f.name, '选择工人', [
-        ...(p.workers > 0 ? [[false, '普通工人']] : []),
+        ...(p.workers - Number(!!p.grayWorkerAvailable) > 0 ? [[false, '普通工人']] : []),
+        ...(p.grayWorkerAvailable ? [['gray', '灰色临时工']] : []),
         ...(p.largeWorker ? [[true, '大工人']] : []),
+        ...readySpecial.map((id) => [
+          'special:' + id,
+          (v.specialWorkerCatalog || []).find((w) => w.id === id)?.name || id,
+        ]),
       ]);
-      readers.push((a) => (a[f.name] = String(read()) === 'true'));
+      readers.push((a) => {
+        const selected = String(read());
+        a[f.name] = selected === 'true';
+        a.gray = selected === 'gray';
+        a.workerType = selected.startsWith('special:') ? selected.slice(8) : '';
+      });
+    } else if (f.type === 'trainingWorker') {
+      if (!v.config?.specialWorkers && !p.grandeRemoved) continue;
+      const toll = v.config?.structures
+        ? v.players.filter((q) => q.id !== p.id && q.buildings?.includes('academy')).length
+        : 0;
+      const entries = [
+        'regular',
+        ...(p.grandeRemoved ? ['grande'] : []),
+        ...(v.config?.specialWorkers ? v.specialWorkerPool || [] : []),
+      ].map((id) => {
+        const worker = (v.specialWorkerCatalog || []).find((w) => w.id === id);
+        const cost = (f.cost ?? 4) + (['regular', 'grande'].includes(id) ? 0 : 1) + toll;
+        const reason =
+          p.totalWorkers >= 6
+            ? '工人已达6名'
+            : id !== 'grande' && p.totalWorkers - (p.grandeRemoved ? 0 : 1) >= 5
+              ? '普通和特殊工人合计已达5名'
+              : p.specialWorkers?.includes(id)
+                ? '已拥有'
+                : p.coins < cost
+                  ? '还差' + (cost - p.coins) + '金币'
+                  : '';
+        return [
+          id,
+          (id === 'regular'
+            ? '普通工人'
+            : id === 'grande'
+              ? '重新培训大工人'
+              : worker?.name || id) +
+            ' · ' +
+            cost +
+            '金币 · ' +
+            (f.now ? '本年可用' : '次年可用'),
+          reason,
+          worker?.description || '培训普通工人',
+        ];
+      });
+      const read = chooser(f.name, '培训工人', entries);
+      readers.push((a) => (a.specialWorker = read()));
+    } else if (f.type === 'specialWorker') {
+      if (!v.config?.specialWorkers) continue;
+      const ready = (p.specialWorkers || []).filter(
+        (id) => !p.specialWorkerUsed?.[id] && (p.specialWorkerReady?.[id] || 0) <= (v.year || 0),
+      );
+      const read = chooser(f.name, '特殊工人（可选）', [
+        ['', '普通工人'],
+        ...ready.map((id) => [
+          id,
+          (v.specialWorkerCatalog || []).find((w) => w.id === id)?.name || id,
+        ]),
+      ]);
+      readers.push((a) => {
+        a.workerType = read();
+        if (a.workerType) a.large = false;
+      });
     } else {
       unsupported = true;
       controls.append(
@@ -974,6 +1282,22 @@ export function renderVisitor(box, v, act, online) {
     readiness.classList.toggle('ready', !missing);
     hint(readiness, missing || '已选好本步骤所需资源');
     hint(send, missing || '提交所选效果与资源', !!missing);
+    document.dispatchEvent(
+      new CustomEvent('visitor-choice-state', {
+        detail: {
+          code: v.code,
+          youId: v.youId,
+          choiceId: c.id,
+          option: d.option,
+          reason: !online
+            ? '连接恢复后才能提交。'
+            : unsupported
+              ? '此选择的操作界面尚未完成。'
+              : missing,
+          ready: !send.disabled,
+        },
+      }),
+    );
   };
   refreshReady();
   form.onsubmit = async (event) => {
@@ -981,7 +1305,12 @@ export function renderVisitor(box, v, act, online) {
     if (draft !== d || d.busy || !d.online || unsupported || reasons[d.option]) return;
     try {
       validators.forEach((check) => check());
-      const a = { type: 'choose', choiceId: c.id, revision: d.view.revision, option: d.option };
+      const a = {
+        type: 'choose',
+        choiceId: c.id,
+        revision: d.view.revision,
+        option: d.option,
+      };
       readers.forEach((read) => read(a));
       d.busy = true;
       d.error = '';

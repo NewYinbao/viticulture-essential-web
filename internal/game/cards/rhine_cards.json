@@ -1,0 +1,642 @@
+[
+  {
+    "ID": "rhine-summer-accountant",
+    "Type": "summer",
+    "Name": "会计",
+    "Description": "自己抽1藤、1夏访客、1冬访客并得1金币；随后每名对手可抽1夏访客。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L221",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-administrator",
+    "Type": "summer",
+    "Name": "行政主管",
+    "Description": "把本次用于打出此牌的那名工人移到未来季节的行动；在该季开始时执行预约行动。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L225",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-agent",
+    "Type": "summer",
+    "Name": "经纪人",
+    "Description": "二选一：弃2手牌得5金币；付2金币抽2冬访客或2藤（两张须同类）。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L229",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-ampelograph",
+    "Type": "summer",
+    "Name": "葡萄品种学家",
+    "Description": "种1藤，可超过田地总值上限；若种后没有超限，另得2金币。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L233",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-banker",
+    "Type": "summer",
+    "Name": "银行家",
+    "Description": "自己得5金币；每名对手可失1胜利分，从银行得3金币。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L237; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-botanist",
+    "Type": "summer",
+    "Name": "植物学家",
+    "Description": "二选一：得1枚价值2的葡萄；弃1葡萄抽4藤。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L238",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-brickMason",
+    "Type": "summer",
+    "Name": "砌砖匠",
+    "Description": "二选一：付9金币建造2建筑；拆除1建筑，得1胜利分并抽1订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L242",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-cicerone",
+    "Type": "summer",
+    "Name": "讲解员",
+    "Description": "三选一：得4金币；收获1田；弃1葡萄抽3订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L246",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-contractor",
+    "Type": "summer",
+    "Name": "承包商",
+    "Description": "三选二：得1胜利分；原价建1建筑；种1藤。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L250; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-dismantler",
+    "Type": "summer",
+    "Name": "拆卸工",
+    "Description": "拆除自己的1建筑，然后获得1瓶价值为该建筑标价的酒。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L251",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-docent",
+    "Type": "summer",
+    "Name": "解说员",
+    "Description": "二选一：得3金币；酿至多3瓶酒。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L255",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-earlyBuyer",
+    "Type": "summer",
+    "Name": "早期买家",
+    "Description": "完成1订单并得2金币；若自身胜利分不超过5，改得4金币。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L259",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-embezzler",
+    "Type": "summer",
+    "Name": "侵占者",
+    "Description": "费用二选一：失2胜利分或弃3手牌；收益二选一：得6金币或抽3订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L263",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-fortuneTeller",
+    "Type": "summer",
+    "Name": "占卜师",
+    "Description": "抽2冬访客；若任一对手已有至少5胜利分，再抽1订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L267; https://stonemaiergames.com/wp-content/uploads/2018/03/IMG_7117.jpg",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-freelancer",
+    "Type": "summer",
+    "Name": "自由职业者",
+    "Description": "二选一：抽1任意类型牌；失2胜利分免费建1建筑。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L271",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-friendlyHelper",
+    "Type": "summer",
+    "Name": "热心帮手",
+    "Description": "二选一：酒窖升一级，费用减3金币；得1瓶价值1的酒。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L275; https://stonemaiergames.com/wp-content/uploads/2018/03/IMG_7117.jpg",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-grapeBuyer",
+    "Type": "summer",
+    "Name": "葡萄买家",
+    "Description": "二选一：付3金币得红1、白1葡萄各1枚；付5金币得红4、白4各1枚。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L279; https://stonemaiergames.com/wp-content/uploads/2018/03/IMG_7117.jpg",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-grapeMerchant",
+    "Type": "summer",
+    "Name": "葡萄商人",
+    "Description": "二选一：卖至多3葡萄，每枚按常规卖价的3倍收钱；弃2葡萄得1瓶价值6的桃红酒，可忽略中酒窖要求。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L283",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-greenskeeper",
+    "Type": "summer",
+    "Name": "田地管理员",
+    "Description": "得2金币并种1藤；若任一玩家已有至少10胜利分，再种1藤，额外这藤可忽略田地总值上限。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L287",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-miller",
+    "Type": "summer",
+    "Name": "磨坊主",
+    "Description": "已有风车：得价值3葡萄或1胜利分；否则付2金币建风车。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L291",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-oldGeneral",
+    "Type": "summer",
+    "Name": "老将军",
+    "Description": "自己放置1影响力星；所有已在地图放满6星的对手必须各收回自己3星。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L295; https://stonemaiergames.com/wp-content/uploads/2018/03/IMG_7116-e1521909183668.jpg",
+    "Board": true
+  },
+  {
+    "ID": "rhine-summer-owner",
+    "Type": "summer",
+    "Name": "庄园主人",
+    "Description": "三选二：原价建1建筑；抽1订单；种1藤。若有风车，再得1胜利分。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L299",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-peasant",
+    "Type": "summer",
+    "Name": "农夫",
+    "Description": "先抽1订单；然后二选一：种1藤并忽略前置建筑；得2金币。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L303",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-philanthropist",
+    "Type": "summer",
+    "Name": "慈善家",
+    "Description": "二选一：得3金币；抽1订单和1冬访客。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L307",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-plantDealer",
+    "Type": "summer",
+    "Name": "藤苗商",
+    "Description": "抽4藤，再从刚抽的4张中弃2张。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L311",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-plantReorganizer",
+    "Type": "summer",
+    "Name": "植株整理师",
+    "Description": "先抽1藤和1任意类型牌；然后拔起1已种藤，并种1藤。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L315",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-premiumWineDealer",
+    "Type": "summer",
+    "Name": "精品酒商",
+    "Description": "二选一：得3金币；付9金币得价值7的起泡酒或桃红酒1瓶，可忽略大酒窖要求。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L319",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-reorganizer",
+    "Type": "summer",
+    "Name": "整理师",
+    "Description": "弃2手牌，得5金币或价值2葡萄1枚。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L323",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-sculptor",
+    "Type": "summer",
+    "Name": "雕刻家",
+    "Description": "三选一：每块自有田得1金币；失1年收入得价值4桃红酒1瓶；种至多2藤。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L327",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-sommelier",
+    "Type": "summer",
+    "Name": "侍酒师",
+    "Description": "已有品酒室：弃1酒得1胜利分；否则付2金币建品酒室。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L331",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-sonInLaw",
+    "Type": "summer",
+    "Name": "女婿",
+    "Description": "把此牌永久放在1田；此后每年冬季自己的第一次行动时，可额外收获该田，所产葡萄总值至多3；仍受每田每年只收获一次限制。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L335; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-structureReorganizer",
+    "Type": "summer",
+    "Name": "建筑整理师",
+    "Description": "先抽1任意类型牌；可拆自己的1建筑，若拆了，可免费建1建筑。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L339; https://stonemaiergames.com/wp-content/uploads/2018/03/IMG_7116-e1521909183668.jpg; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/comment-page-1/",
+    "Board": true
+  },
+  {
+    "ID": "rhine-summer-subsidizer",
+    "Type": "summer",
+    "Name": "资助者",
+    "Description": "三选一：建1建筑减2金币；种至多2藤；种1藤且忽略前置建筑。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L343",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-supporter",
+    "Type": "summer",
+    "Name": "支持者",
+    "Description": "三选二：抽1藤；得2金币；抽1订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L347",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-traveller",
+    "Type": "summer",
+    "Name": "旅客",
+    "Description": "二选一：得3金币；收获至多2田。若有品酒室，另得3金币。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L351",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-vineTrader",
+    "Type": "summer",
+    "Name": "葡萄藤交易商",
+    "Description": "弃任意数量藤，每张得3金币；随后可按每张2金币抽藤，和/或每张4金币抽冬访客。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L355",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-wineEngineer",
+    "Type": "summer",
+    "Name": "酿酒工程师",
+    "Description": "二选一：付2金币得到1瓶价值4的酒；选定1或2颗葡萄，每轮付2金币陈酿一次，至多3轮，只能继续陈酿最初选定的葡萄。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L359; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/comment-page-1/; https://boardgamegeek.com/thread/2153880/article/31292084#31292084",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-wineLover",
+    "Type": "summer",
+    "Name": "爱酒者",
+    "Description": "已有品酒室：得1年收入或价值4葡萄1枚；否则失2年收入，免费建品酒室并得价值1酒1瓶。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L363; https://stonemaiergames.com/wp-content/uploads/2018/03/IMG_7117.jpg",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-wineTrader",
+    "Type": "summer",
+    "Name": "酒交易商",
+    "Description": "二选一：得价值1葡萄1枚；付6金币得价值7红酒或白酒1瓶，可忽略大酒窖要求。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L367",
+    "Board": false
+  },
+  {
+    "ID": "rhine-summer-writer",
+    "Type": "summer",
+    "Name": "作家",
+    "Description": "二选一：弃1酒得2年收入；失2年收入，得价值4葡萄1枚或价值4酒1瓶。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L371",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-advertiser",
+    "Type": "winter",
+    "Name": "广告员",
+    "Description": "二选一：弃1葡萄或1酒，得1胜利分及1年收入；失2年收入抽3订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L536",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-bargainer",
+    "Type": "winter",
+    "Name": "议价者",
+    "Description": "抽3订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L540",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-brideToBe",
+    "Type": "winter",
+    "Name": "准新娘",
+    "Description": "二选一：得3金币；用任意2葡萄酿1瓶起泡酒，代替通常的2红1白配方。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L544",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-bureaucrat",
+    "Type": "winter",
+    "Name": "官僚",
+    "Description": "若自己的胜利分严格为全场最低，得5金币；否则付1金币抽1藤、1冬访客和1订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L548",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-cellarman",
+    "Type": "winter",
+    "Name": "酒窖工",
+    "Description": "二选一：付4金币得红1、白1葡萄各1枚；完成1订单后得3金币。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L552",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-cellarmaster",
+    "Type": "winter",
+    "Name": "酒窖主管",
+    "Description": "弃1酒得4金币；若该酒是所有玩家酒窖里价值最高的酒，再得2胜利分。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L556",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-cheapBuyer",
+    "Type": "winter",
+    "Name": "低价买家",
+    "Description": "提升1或2瓶酒，合计增加2价值；然后完成1订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L560",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-chemist",
+    "Type": "winter",
+    "Name": "化学家",
+    "Description": "二选一：种2藤；收获1田，每枚所产葡萄减1价值，得1胜利分。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L564",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-craftsman",
+    "Type": "winter",
+    "Name": "工匠",
+    "Description": "三选二：抽1订单；正常付费酒窖升一级；得1胜利分。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L568; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-duchess",
+    "Type": "winter",
+    "Name": "公爵夫人",
+    "Description": "二选一：付1金币得1年收入；失2年收入，完成恰好2订单（官方明确不可只完成1单）。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L569; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-eliteOenologist",
+    "Type": "winter",
+    "Name": "资深酿酒学家",
+    "Description": "二选一：所有酒陈酿两次；酒窖升一级减4金币。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L573",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-endorser",
+    "Type": "winter",
+    "Name": "代言人",
+    "Description": "弃1葡萄或1酒；二选一：得1胜利分及1年收入；抽3订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L577",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-enthusiast",
+    "Type": "winter",
+    "Name": "热情访客",
+    "Description": "二选一：抽2夏访客；完成1订单后抽1订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L581",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-estateAgent",
+    "Type": "winter",
+    "Name": "地产经纪",
+    "Description": "按自己拥有的田地数抽等量任意类型牌。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L585",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-grapeVendor",
+    "Type": "winter",
+    "Name": "葡萄小贩",
+    "Description": "弃1枚价值X的葡萄，得X金币或抽向上取整(X/2)张冬访客；若有品酒室，另得4金币。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L589",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-grapeWhisperer",
+    "Type": "winter",
+    "Name": "葡萄低语者",
+    "Description": "收获至多2田并得2金币。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L593",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-harvestExpert",
+    "Type": "winter",
+    "Name": "采收专家",
+    "Description": "三选一：收获1田；抽1藤；付1金币建轭。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L597; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-hiredHand",
+    "Type": "winter",
+    "Name": "临时雇工",
+    "Description": "四选二：收获1田；酿至多2酒；得2金币；完成1订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L598",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-influencer",
+    "Type": "winter",
+    "Name": "影响力人物",
+    "Description": "自己放置1星，然后可移动至多3颗星，可选任意玩家拥有的星。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L602; https://stonemaiergames.com/wp-content/uploads/2018/03/IMG_7116-e1521909183668.jpg",
+    "Board": true
+  },
+  {
+    "ID": "rhine-winter-laborer",
+    "Type": "winter",
+    "Name": "劳工",
+    "Description": "收获至多2田，或酿至多3瓶酒；可失1胜利分两项都做。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L606; https://boardgamegumbo.wordpress.com/2019/04/15/spice-it-up-with-viticulture-visit-from-the-rhine-valley/ (IMG_5714 card photograph; print-run identification not independently confirmed)",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-lecturer",
+    "Type": "winter",
+    "Name": "讲师",
+    "Description": "二选一：酿至多3酒；付3金币培训1工人。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L607",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-lobbyist",
+    "Type": "winter",
+    "Name": "游说者",
+    "Description": "付X金币，将地图X颗星归还其各自主人；若任一玩家至少20胜利分，自己失3胜利分。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L611; https://stonemaiergames.com/wp-content/uploads/2018/03/IMG_7116-e1521909183668.jpg",
+    "Board": true
+  },
+  {
+    "ID": "rhine-winter-lovebirds",
+    "Type": "winter",
+    "Name": "热恋情侣",
+    "Description": "二选一：得1金币并抽1夏访客；抽1订单并酿至多2酒。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L615",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-middleman",
+    "Type": "winter",
+    "Name": "中间商",
+    "Description": "二选一：抽3藤，然后弃1藤或付2金币；完成1订单，可忽略酒种要求但仍须满足价值。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L619",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-premiumBuyer",
+    "Type": "winter",
+    "Name": "优质买家",
+    "Description": "完成1订单；若交付的每瓶酒都比对应要求至少高2价值，再得2胜利分。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L623",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-researcher",
+    "Type": "winter",
+    "Name": "研究员",
+    "Description": "二选一：抽2订单；付3金币培训1工人。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L627",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-rhineSailor",
+    "Type": "winter",
+    "Name": "莱茵水手",
+    "Description": "弃3手牌，抽3冬访客并得1金币。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L631; https://stonemaiergames.com/wp-content/uploads/2018/03/IMG_7117.jpg",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-schoolTeacher",
+    "Type": "winter",
+    "Name": "学校教师",
+    "Description": "二选一：付4金币培训1名当年即可用的工人；弃1酒得2胜利分。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L635",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-shipper",
+    "Type": "winter",
+    "Name": "运输商",
+    "Description": "三选一：酿至多3酒；完成1订单；得3金币。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L639",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-skeptic",
+    "Type": "winter",
+    "Name": "怀疑者",
+    "Description": "二选一：酒窖升一级减3金币；让2酒陈酿，然后完成1订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L643",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-specialHarvester",
+    "Type": "winter",
+    "Name": "特殊采收者",
+    "Description": "二选一：收获1田并酿1酒；把同一田内的每张藤分别当作独立田地采收。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L647",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-supervisor",
+    "Type": "winter",
+    "Name": "监工",
+    "Description": "酿至多2瓶酒；每瓶本次新酿的起泡酒获得1胜利分。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L651; https://boardgamegumbo.wordpress.com/2019/04/15/spice-it-up-with-viticulture-visit-from-the-rhine-valley/ (Rhine product review, IMG_5799 photo)",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-theologian",
+    "Type": "winter",
+    "Name": "神学家",
+    "Description": "二选一：收获1田并额外得1枚价值1葡萄；完成1订单，然后可弃1瓶价值X红酒，得X金币或2胜利分。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L652; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/comment-page-1/",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-trainer",
+    "Type": "winter",
+    "Name": "训练员",
+    "Description": "二选一：付3金币培训1名当年可用的工人；将1名待命永久工人退回培训池，得2胜利分。灰色临时工不可移除。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L656; https://boardgamegeek.com/thread/2481397/article/35537987#35537987",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-tutor",
+    "Type": "winter",
+    "Name": "导师",
+    "Description": "二选一：失1胜利分并付1金币培训1工人，次年可用；将1名永久工人退回培训池，弃X手牌后抽X任意类型牌。可以移除已派遣工人并空出其行动格。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L660; https://boardgamegeek.com/thread/2341105/article/37309445#37309445",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-uncertifiedOenologist",
+    "Type": "winter",
+    "Name": "无证酿酒学家",
+    "Description": "二选一：所有酒陈酿两次；失1胜利分，免费酒窖升一级。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L664; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-virtuoso",
+    "Type": "winter",
+    "Name": "技艺大师",
+    "Description": "不放置工人，执行一个更早季节的行动；可取该行动任一奖励，即使奖励格被占用。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L665",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-wineStoreOwner",
+    "Type": "winter",
+    "Name": "酒铺老板",
+    "Description": "二选一：弃1瓶价值X酒，抽X订单；付X金币，得1瓶价值X酒。灰色酒图标包含所有酒种，但仍须一般酒种最低值和酒窖限制。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L669; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/comment-page-1/",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-winterAgent",
+    "Type": "winter",
+    "Name": "冬季经纪",
+    "Description": "抽2夏访客；若任一对手已有至少5胜利分，再抽1订单。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L673",
+    "Board": false
+  },
+  {
+    "ID": "rhine-winter-zymologist",
+    "Type": "winter",
+    "Name": "发酵学家",
+    "Description": "酿至多2瓶价值至少4的酒，可忽略酒窖升级要求；仍须合法配方及葡萄。",
+    "RuleSource": "https://github.com/vsiao/oenology/blob/460f4024ae2b83375698380106e21706b0aeab07/src/game-data/visitors/visitorCards.tsx#L677; https://stonemaiergames.com/games/viticulture/visit-from-the-rhine-valley/",
+    "Board": false
+  }
+]

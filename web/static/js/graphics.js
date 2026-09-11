@@ -1,3 +1,4 @@
+import { structureBuildings } from './building-catalog.js';
 // Original offline artwork; public state only.
 const node = (tag, text, cls) => {
   const n = document.createElement(tag);
@@ -41,12 +42,21 @@ export function decorateTable(v) {
   document.body.dataset.season = v.phase;
   const track = document.querySelector('#season-track');
   track.replaceChildren();
-  for (const [id, title, desc] of [
-    ['wake', '春', '选择顺序'],
-    ['summer', '夏', '经营葡萄园'],
-    ['fall', '秋', '选择访客'],
-    ['winter', '冬', '酿酒与交付'],
-  ]) {
+  const seasons =
+    v.config?.board === 'tuscany'
+      ? [
+          ['spring', '春', '建设与影响力'],
+          ['summer', '夏', '种植与交易'],
+          ['fall', '秋', '收获与酿酒'],
+          ['winter', '冬', '售酒与交付'],
+        ]
+      : [
+          ['wake', '春', '选择顺序'],
+          ['summer', '夏', '经营葡萄园'],
+          ['fall', '秋', '选择访客'],
+          ['winter', '冬', '酿酒与交付'],
+        ];
+  for (const [id, title, desc] of seasons) {
     const n = node('div', null, 'season-step' + (v.phase === id ? ' current' : ''));
     n.append(node('b', title), node('span', desc));
     if (v.phase === id) n.setAttribute('aria-current', 'step');
@@ -120,8 +130,26 @@ export function renderEstate(v, p, buildings, types) {
     stats.append(a);
   }
   box.append(stats);
+  if (v.config?.visitors === 'ee_moor' && p.moorContracts?.length) {
+    const contracts = node('div', null, 'public-hand-counts');
+    for (const card of p.moorContracts) {
+      const requirement = card.id === 'moor-summer-06' ? '终局收入≥4' : '终局葡萄≥3';
+      const met = card.id === 'moor-summer-06' ? p.income >= 4 : p.grapes.length >= 3;
+      const badge = node('span', (met ? '✓ ' : '') + requirement);
+      badge.tabIndex = 0;
+      badge.title = card.description;
+      contracts.append(badge);
+    }
+    box.append(contracts);
+  }
   const publicHand = node('div', null, 'public-hand-counts');
-  for (const type of ['vine', 'order', 'summer', 'winter'])
+  for (const type of [
+    'vine',
+    'order',
+    'summer',
+    'winter',
+    ...(v.config?.structures ? ['structure'] : []),
+  ])
     publicHand.append(node('span', (types[type] || type) + ' ' + (p.handCounts?.[type] || 0)));
   publicHand.setAttribute('aria-label', '公开手牌类型数量');
   box.append(publicHand);
@@ -129,6 +157,19 @@ export function renderEstate(v, p, buildings, types) {
   reserve.append(node('span', '待命工人', 'mini-label'));
   for (let i = 0; i < p.workers; i++) reserve.append(worker(v, p.id));
   if (p.largeWorker) reserve.append(worker(v, p.id, true));
+  if (v.config?.specialWorkers) {
+    for (const id of p.specialWorkers || []) {
+      const ready = !p.specialWorkerUsed?.[id] && (p.specialWorkerReady?.[id] || 0) <= v.year;
+      const spec = (v.specialWorkerCatalog || []).find((w) => w.id === id);
+      const marker = node(
+        'span',
+        (spec?.name || id) + (ready ? ' · 待命' : ' · 已派／待生效'),
+        'special-worker-reserve',
+      );
+      marker.title = spec?.description || '';
+      reserve.append(marker);
+    }
+  }
   reserve.append(
     node(
       'small',
@@ -147,9 +188,26 @@ export function renderEstate(v, p, buildings, types) {
       node('span', '容量 ' + f.capacity, 'field-capacity'),
       node(
         'small',
-        f.vines?.length ? f.vines.map((c) => '红' + c.red + ' 白' + c.white).join(' / ') : '待种植',
+        v.config?.structures && f.structure
+          ? '建筑占地 · ' +
+              (structureBuildings.find(([id]) => id === f.structure)?.[1] || f.structure)
+          : f.vines?.length
+            ? f.vines.map((c) => '红' + c.red + ' 白' + c.white).join(' / ')
+            : '待种植',
       ),
     );
+    if (v.config?.visitors === 'ee_moor' && f.fruitDealer) {
+      const badge = node('span', '水果商 · 收获奖励', 'harvest-stamp');
+      badge.title = '每次收获此田地，选择获得2金币或1分';
+      badge.tabIndex = 0;
+      e.append(badge);
+    }
+    if (v.config?.visitors === 'rhine' && p.rhineSonField === f.index) {
+      const badge = node('span', '女婿 · 冬初收获', 'harvest-stamp');
+      badge.title = '首次冬季行动前可收获此田，总葡萄价值至多3；不消耗工人。';
+      badge.tabIndex = 0;
+      e.append(badge);
+    }
     if (f.harvested) e.append(node('span', '本年已收获', 'harvest-stamp'));
     fields.append(e);
   }
@@ -165,11 +223,25 @@ export function renderEstate(v, p, buildings, types) {
       tasting_room: 'estate',
       yoke: 'field',
     };
-  for (const [id, label] of Object.entries(buildings)) {
-    const built = p.buildings.includes(id),
+  const shownBuildings = [
+    ...Object.entries(buildings),
+    ...(v.config?.structures
+      ? structureBuildings
+          .filter(
+            ([id]) =>
+              (p.structureSlots || []).includes(id) || p.fields.some((f) => f.structure === id),
+          )
+          .map(([id, name, cost]) => [id, name + ' · ' + cost + '金币'])
+      : []),
+  ];
+  for (const [id, label] of shownBuildings) {
+    const built =
+        p.buildings.includes(id) ||
+        (p.structureSlots || []).includes(id) ||
+        p.fields.some((f) => f.structure === id),
       n = node('div', null, 'structure' + (built ? ' built' : ''));
     n.append(
-      art(icons[id], 'building-art'),
+      art(icons[id] || 'estate', 'building-art'),
       node('span', label.split(' · ')[0]),
       node('small', built ? '已建成' : label.split(' · ')[1] + ' · 未建'),
     );

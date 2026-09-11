@@ -8,7 +8,9 @@ export function cardArt(c, cls = '') {
       ? 'portrait-' + ((k - 1) % 12)
       : c.type === 'vine'
         ? 'vine-' + ((k - 1) % 4)
-        : 'order') +
+        : c.type === 'structure'
+          ? 'order'
+          : 'order') +
     '.svg';
   e.alt = '原创手绘风格插画（部分卡牌共享主题图）';
   return e;

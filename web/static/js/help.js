@@ -1,6 +1,15 @@
 import { art } from './graphics.js';
 import { actionReason, vineRequirements } from './action-options.js';
-import { ruleTopics, actionTopics, actionLessons } from './rules-content.js';
+import {
+  actionTopics,
+  actionLessons,
+  actionLessonForView,
+  rulesForView,
+  pendingRule,
+  configOf,
+  configurationSummary,
+  seasonNames,
+} from './rules-content.js';
 
 const $ = (selector) => document.querySelector(selector);
 const node = (tag, text, cls) => {
@@ -29,6 +38,10 @@ let state,
   help,
   guide,
   returnFocus,
+  returnSelector,
+  visitorState,
+  roomKey,
+  ruleSignature,
   topic = 'overview';
 
 function button(text, action, cls) {
@@ -37,9 +50,25 @@ function button(text, action, cls) {
   b.onclick = action;
   return b;
 }
+function saveTour() {
+  save('vineyard-ee-tour-step', step);
+  save('vineyard-ee-tour:' + roomKey, step);
+}
+function visibleTarget(selector) {
+  if (!selector) return null;
+  return (
+    [...document.querySelectorAll(selector)].find(
+      (e) =>
+        !e.closest('[hidden]') &&
+        e.getClientRects().length &&
+        getComputedStyle(e).visibility !== 'hidden' &&
+        !e.matches(':disabled, [aria-disabled="true"]'),
+    ) || null
+  );
+}
 function focusTarget(selector) {
-  const target = $(selector);
-  if (!target || !target.getClientRects().length) return;
+  const target = visibleTarget(selector);
+  if (!target) return;
   if (!target.matches('button, a, input, select, summary, [tabindex]')) target.tabIndex = -1;
   target.scrollIntoView({ block: 'center', behavior: 'instant' });
   target.focus({ preventScroll: true });
@@ -52,16 +81,34 @@ function closeRules() {
   document
     .querySelectorAll('[data-rules-open]')
     .forEach((b) => b.setAttribute('aria-expanded', 'false'));
-  if (returnFocus?.isConnected && returnFocus.getClientRects().length) {
-    returnFocus.focus({ preventScroll: true });
-    returnFocus.scrollIntoView({ block: 'nearest' });
+  const back =
+    returnFocus?.isConnected && visibleTarget(returnSelector) === returnFocus
+      ? returnFocus
+      : visibleTarget(returnSelector) ||
+        visibleTarget('#game [data-rules-open], #welcome [data-rules-open]');
+  if (back) {
+    back.focus({ preventScroll: true });
+    back.scrollIntoView({ block: 'nearest' });
   }
   paintGuide();
 }
 function showRules(id = 'overview', trigger = document.activeElement) {
-  if (help.hidden) returnFocus = trigger;
-  topic = ruleTopics.some((t) => t.id === id) ? id : 'overview';
-  const anchor = $('#game').hidden ? $('#welcome') : $('#action-area');
+  if (help.hidden) {
+    returnFocus = trigger;
+    returnSelector = trigger?.id
+      ? '#' + CSS.escape(trigger.id)
+      : trigger?.dataset.ruleTopic
+        ? '[data-rule-topic="' + CSS.escape(trigger.dataset.ruleTopic) + '"]'
+        : trigger?.hasAttribute('data-guide-rules')
+          ? '[data-guide-rules]'
+          : '[data-rules-open]';
+  }
+  topic = id;
+  const anchor = $('#game').hidden
+    ? $('#welcome')
+    : id === 'current'
+      ? $('#ee-choice')
+      : $('#action-area');
   anchor.before(help);
   help.hidden = false;
   paintRules();
@@ -69,19 +116,31 @@ function showRules(id = 'overview', trigger = document.activeElement) {
     .querySelectorAll('[data-rules-open]')
     .forEach((b) => b.setAttribute('aria-expanded', 'true'));
   clearHighlight();
+  paintGuide();
   help.scrollIntoView({ block: 'start' });
   $('#rules-help-title').focus({ preventScroll: true });
 }
 function paintRules() {
+  const reference = rulesForView(state);
+  const current = pendingRule(state, visitorState);
+  const topics = current ? [current, ...reference.topics] : reference.topics;
+  if (!topics.some((t) => t.id === topic)) topic = 'overview';
+  const focused = help.contains(document.activeElement)
+    ? {
+        id: document.activeElement.id,
+        topic: document.activeElement.dataset.topic,
+        close: document.activeElement.classList.contains('help-close'),
+      }
+    : null;
   help.replaceChildren();
   const head = node('div', null, 'help-heading');
-  const title = node('h3', '规则说明 · EE 本体');
+  const title = node('h3', '规则说明 · ' + reference.title);
   title.id = 'rules-help-title';
   title.tabIndex = -1;
   head.append(title, button('返回游戏 ×', closeRules, 'help-close'));
   const nav = node('nav', null, 'rule-topics');
   nav.setAttribute('aria-label', '规则主题');
-  for (const item of ruleTopics) {
+  for (const item of topics) {
     const b = button(item.title, () => {
       topic = item.id;
       paintRules();
@@ -91,7 +150,7 @@ function paintRules() {
     b.setAttribute('aria-pressed', String(topic === item.id));
     nav.append(b);
   }
-  const item = ruleTopics.find((t) => t.id === topic);
+  const item = topics.find((t) => t.id === topic);
   const intro = node('div', null, 'rule-intro');
   intro.append(art(item.art, 'rule-art'), node('p', item.intro));
   const cards = node('div', null, 'rule-cards');
@@ -102,13 +161,7 @@ function paintRules() {
   }
   const foot = node('div', null, 'help-foot');
   const sources = node('span', '规则来源：');
-  for (const [label, url] of [
-    [
-      'EE 说明书',
-      'https://shared.steamstatic.com/store_item_assets/steam/apps/414235/manuals/Viticulture_EE_Rules.pdf?t=1551153655',
-    ],
-    ['官方 FAQ', 'https://stonemaiergames.com/games/viticulture/faq/'],
-  ]) {
+  for (const [label, url] of reference.sources) {
     const link = node('a', label);
     link.href = url;
     link.target = '_blank';
@@ -119,14 +172,33 @@ function paintRules() {
     setEnabled(!enabled);
     paintRules();
   });
+  toggle.id = 'rules-guide-toggle';
   toggle.setAttribute('aria-pressed', String(enabled));
   foot.append(sources, toggle);
-  help.append(head, nav, intro, cards, foot);
+  help.append(head);
+  if (reference.warning)
+    help.append(
+      node('p', reference.warning + ' 以下已核实通则不代表模块可玩。', 'rule-unavailable'),
+    );
+  help.append(nav, intro, cards, foot);
+  if (focused) {
+    const replacement = focused.topic
+      ? help.querySelector('[data-topic="' + focused.topic + '"]')
+      : focused.close
+        ? help.querySelector('.help-close')
+        : document.getElementById(focused.id);
+    (replacement || title)?.focus({ preventScroll: true });
+  }
 }
 function setEnabled(value) {
+  const closingGuide = !value && guide.contains(document.activeElement);
   enabled = value;
   save('vineyard-ee-guide', enabled ? 'on' : 'off');
   paintGuide();
+  if (closingGuide)
+    visibleTarget('#game [data-guide-toggle], #welcome [data-guide-toggle]')?.focus({
+      preventScroll: true,
+    });
   if (enabled && !guide.hidden && !panelState && help.hidden)
     guide.scrollIntoView({ block: 'nearest' });
 }
@@ -150,8 +222,8 @@ function advice() {
     return {
       title: '先让朋友落座',
       text: state.legal.canStart
-        ? '朋友已到齐时，房主可以开始第一年。'
-        : '分享房间码，至少两人落座后由房主开始。',
+        ? configurationSummary(state) + '。确认开局规则后，房主开始第一年；开局后锁定。'
+        : state.ruleSupport?.reason || '分享房间码，至少两人落座后由房主开始；规则摘要对全桌公开。',
       target: state.legal.canStart ? '#start-game' : '#code-label',
       topic: 'overview',
     };
@@ -167,23 +239,48 @@ function advice() {
       return {
         title: '等待其他庄主选择',
         text: '你可以先查看自己的手牌，准备接下来的行动。',
-        target: '#hand-panel',
-        topic: 'orders',
+        target: null,
+        topic: 'current',
       };
     const kind = state.pendingChoice.kind;
+    const rule = pendingRule(state, visitorState);
+    const selection = visitorState?.choiceId === state.pendingChoice.id ? visitorState : null;
+    const visitor = !!state.pendingChoice.visitor || kind === 'planner';
+    let target = ['discard', 'structure_barn'].includes(kind)
+      ? '#hand .card[role="button"]'
+      : visitor
+        ? selection?.ready
+          ? '[data-visitor-submit]'
+          : visibleTarget('#hand .visitor-eligible')
+            ? '#hand .visitor-eligible'
+            : visibleTarget('.visitor-resource button, .visitor-resource select')
+              ? '.visitor-resource button, .visitor-resource select'
+              : '.visitor-options .option-ready'
+        : '#ee-choice [data-choice], #ee-choice form button:not(:disabled)';
+    if (
+      ['messenger', 'special_mafioso', 'structure_fermentation', 'structure_mercado'].includes(kind)
+    )
+      target = '#ee-choice [data-choice-resources]';
+    if (['tuscany_influence', 'tuscany_trade', 'structure_influence'].includes(kind))
+      target = visibleTarget('[data-tuscany-confirm]')
+        ? '[data-tuscany-confirm]'
+        : '#ee-choice [data-tuscany-input]';
+    if (panelState)
+      target = panelState.reason
+        ? panelState.target || '#action-panel .action-choice:not([aria-disabled="true"])'
+        : '#confirm-action';
     return {
-      title: kind === 'discard' ? '年末整理手牌' : '先完成当前选择',
-      text:
-        kind === 'discard'
-          ? '点选多余手牌，弃至 7 张后确认。'
-          : kind === 'papa'
-            ? '比较父亲的赠礼与额外金币，选择适合起始手牌的一项。'
-            : kind === 'fall'
-              ? '选择想要的访客颜色：黄牌用于夏季，蓝牌用于冬季。'
-              : '先选效果，再补齐所需卡牌或资源，最后确认。',
-      target: kind === 'discard' ? '.discard-prompt' : '#ee-choice',
-      topic:
-        kind === 'papa' ? 'overview' : kind === 'fall' || kind === 'discard' ? 'seasons' : 'orders',
+      title: rule.intro,
+      text: panelState
+        ? panelState.reason || '资源已选好，确认当前步骤。'
+        : visitor
+          ? selection?.reason ||
+            (selection?.ready
+              ? '所选分支已就绪，确认当前步骤；相关规则列出本牌效果、费用与数量。'
+              : '选择可用分支，并按当前表单补齐资源；相关规则列出本牌各分支。')
+          : rule.cards[0][1],
+      target,
+      topic: 'current',
     };
   }
   if (state.turnId !== state.youId)
@@ -196,9 +293,22 @@ function advice() {
   if (state.phase === 'wake')
     return {
       title: '春季 · 选起床顺序',
-      text: '早起优先行动，晚起拿奖励；先想想今年最需要什么。',
-      target: '#wake-options',
+      text:
+        configOf(state).board === 'tuscany'
+          ? '首年选第2–7行，选行不立即领奖；查看本行各季奖励。'
+          : '早起优先行动，晚起拿奖励；先想想今年最需要什么。',
+      target: '#wake-options button:not(:disabled)',
       topic: 'seasons',
+    };
+  if (panelState)
+    return {
+      title: '完成这次行动',
+      text: panelState.reason || '所需资源已选好，可以确认派遣。',
+      target: panelState.reason
+        ? panelState.target ||
+          '#action-panel .action-choice:not([aria-disabled="true"]), #action-panel select, #action-panel input'
+        : '#confirm-action',
+      topic: actionTopics[panelState.space] || 'workers',
     };
   const legal = (id) => {
     const space = state.spaces.find(
@@ -212,8 +322,34 @@ function advice() {
     target: '[data-space="' + id + '"]',
     topic: actionTopics[id] || 'workers',
   });
+  if (configOf(state).board === 'tuscany') {
+    const available = (state.spaces || []).find((s) => s.season === state.phase && legal(s.id));
+    if (p.passed || ['ready', 'year_end'].includes(p.season))
+      return {
+        title: '个人过季已完成',
+        text: '奖励已在自己的过季步骤结算；等待全员进入下一季，不能提前派工。',
+        target: null,
+        topic: 'seasons',
+      };
+    if (available)
+      return action(
+        available.id,
+        `${seasonNames[state.phase]} · ${available.name}`,
+        actionLessonForView(state, available.id),
+      );
+    return {
+      title: '检查本季行动',
+      text: '按实际行动条件选择；结束本季会立即结算自己的过季奖励，再等待其他玩家。',
+      target: '#pass',
+      topic: 'seasons',
+    };
+  }
   if (state.phase === 'summer') {
-    if (!p.workers && !p.largeWorker)
+    if (
+      !p.workers &&
+      !p.largeWorker &&
+      !Object.values(state.workerPlacements || {}).some((placements) => placements.length)
+    )
       return {
         title: '本季已无待命工人',
         text: '可以结束本季，按流程进入秋季与冬季。',
@@ -305,12 +441,7 @@ function paintActionLesson() {
     box = node('div', null, 'action-lesson');
     panel.querySelector('form').before(box);
   }
-  box.replaceChildren(
-    node(
-      'span',
-      '新手提示 · ' + (actionLessons[panelState.space] || '先选工人和资源，再确认派遣。'),
-    ),
-  );
+  box.replaceChildren(node('span', '新手提示 · ' + actionLessonForView(state, panelState.space)));
   const link = button('规则', () => showRules(actionTopics[panelState.space] || 'workers', link));
   box.append(link);
 }
@@ -327,7 +458,14 @@ function paintGuide() {
   paintActionLesson();
   if (guide.hidden) return;
   const learning = step < 4 && !['lobby', 'finished'].includes(state.phase);
-  const current = learning && step < 3 ? tour[step] : advice();
+  const immediate = !connected || state.pendingChoice || state.turnId !== state.youId || panelState;
+  const lesson = { ...tour[step] };
+  if (step === 0 && configOf(state).board === 'tuscany')
+    lesson.text = '四季都有工人行动；个人过季立即领奖，全员过季后才开始下一季派工。';
+  if (step === 2 && configOf(state).structures)
+    lesson.text =
+      '绿藤、紫订单、黄夏访客、蓝冬访客与橙色建筑牌都占手牌上限；只有你能看自己的牌面。';
+  const current = learning && step < 3 && !immediate ? lesson : advice();
   const focusKey = Object.keys(document.activeElement?.dataset || {}).find((key) =>
     key.startsWith('guide'),
   );
@@ -344,13 +482,17 @@ function paintGuide() {
   const controls = node('div', null, 'guide-controls');
   const locate = button('看这里 ↗', () => focusTarget(current.target));
   locate.dataset.guideLocate = '';
+  const target = visibleTarget(current.target);
+  locate.disabled = !target || !connected || !help.hidden;
+  if (!target) locate.title = '当前没有可定位的操作控件；可查看相关规则。';
   const rules = button('相关规则', () => showRules(current.topic, rules));
+  rules.dataset.guideRules = '';
   controls.append(locate, rules);
   if (learning) {
     if (step > 0) {
       const previous = button('上一步', () => {
         step--;
-        save('vineyard-ee-tour-step', step);
+        saveTour();
         paintGuide();
       });
       previous.dataset.guidePrevious = '';
@@ -358,14 +500,14 @@ function paintGuide() {
     }
     const next = button(step === 3 ? '开始随局提示' : '下一步 →', () => {
       step++;
-      save('vineyard-ee-tour-step', step);
+      saveTour();
       paintGuide();
     });
     next.dataset.guideNext = '';
     controls.append(next);
     const skip = button('跳过导览', () => {
       step = 4;
-      save('vineyard-ee-tour-step', step);
+      saveTour();
       paintGuide();
     });
     skip.dataset.guideSkip = '';
@@ -373,7 +515,7 @@ function paintGuide() {
   } else {
     const restart = button('重看导览', () => {
       step = 0;
-      save('vineyard-ee-tour-step', step);
+      saveTour();
       paintGuide();
     });
     restart.dataset.guideRestart = '';
@@ -389,15 +531,54 @@ function paintGuide() {
       controls.querySelector('[data-guide-restart]') ||
       controls.querySelector('[data-guide-next]')
     )?.focus({ preventScroll: true });
-  const target = $(current.target);
-  if (help.hidden && !panelState && target?.getClientRects().length)
-    target.classList.add('guide-target');
+  if (help.hidden && connected && target) target.classList.add('guide-target');
 }
 export function renderHelp(view, online) {
+  const key = view ? JSON.stringify([view.code, view.youId, configOf(view)]) : null;
+  if (key !== roomKey) {
+    clearHighlight();
+    panelState = null;
+    if (
+      visitorState?.code !== view?.code ||
+      visitorState?.youId !== view?.youId ||
+      visitorState?.choiceId !== view?.pendingChoice?.id
+    )
+      visitorState = null;
+    returnFocus = null;
+    returnSelector = null;
+    topic = 'overview';
+    ruleSignature = null;
+    roomKey = key;
+    // Keep the user's preference, but scope unfinished tours to this room.
+    step = Math.max(0, Math.min(4, Number(read('vineyard-ee-tour:' + key)) || 0));
+  }
   state = view;
   connected = online;
+  if (
+    visitorState &&
+    (visitorState.code !== view?.code ||
+      visitorState.youId !== view?.youId ||
+      visitorState.choiceId !== view?.pendingChoice?.id)
+  )
+    visitorState = null;
   if (!view && !help.hidden) $('#welcome').before(help);
+  refreshRules();
   paintGuide();
+}
+function refreshRules() {
+  const signature = JSON.stringify([
+    state?.config,
+    state?.ruleSupport,
+    state?.pendingChoice,
+    state?.optionReasons,
+    state?.parentOptions,
+    state?.players?.find((p) => p.id === state.youId),
+    visitorState,
+  ]);
+  if (!help.hidden && signature !== ruleSignature) {
+    paintRules();
+    ruleSignature = signature;
+  }
 }
 export function initHelp() {
   help = node('section', null, 'rules-help panel');
@@ -430,6 +611,21 @@ export function initHelp() {
   document.addEventListener('action-panel-state', (event) => {
     panelState = event.detail;
     paintGuide();
+  });
+  document.addEventListener('visitor-choice-state', (event) => {
+    visitorState = event.detail;
+    if (
+      state?.code === visitorState?.code &&
+      state?.youId === visitorState?.youId &&
+      state?.pendingChoice?.id === visitorState?.choiceId
+    ) {
+      refreshRules();
+      paintGuide();
+    }
+  });
+  document.addEventListener('tuscany-choice-state', (event) => {
+    if (event.detail.code === state?.code && event.detail.choiceId === state?.pendingChoice?.id)
+      paintGuide();
   });
   paintGuide();
 }

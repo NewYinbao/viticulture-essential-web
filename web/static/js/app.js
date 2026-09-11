@@ -1,6 +1,11 @@
+import { renderTuscanyBoard } from './tuscany-board.js';
+import { pollState } from './polling.js';
+import { initPassword, renderPassword, clearPassword } from './password-ui.js';
+import { renderExpansions } from './expansions.js';
+import { rulesForView } from './rules-content.js';
 import { initHelp, renderHelp } from './help.js';
 import { openActionPanel, closeActionPanel, hasActionPanel } from './action-panel.js';
-import { actionReason } from './action-options.js';
+import { actionReason, bonusLabel, bonusKey } from './action-options.js';
 import { hint, installHints } from './hints.js';
 import { localCard } from './card-i18n.js';
 import { renderEE, cardArt, setupEE } from './ee-ui.js';
@@ -19,6 +24,7 @@ const types = {
   order: '订单',
   summer: '夏季访客',
   winter: '冬季访客',
+  structure: '结构牌',
   red: '红',
   white: '白',
   blush: '桃红',
@@ -35,6 +41,7 @@ const buildings = {
   yoke: '轭 · 2金币',
 };
 const phases = {
+  spring: '春季 · 建设与影响力',
   setup: '开局 · 家族传承',
   fall: '秋季 · 访客到来',
   year_end: '年末 · 整理手牌',
@@ -50,6 +57,7 @@ let token = localStorage.getItem('vineyard-ee-token') || '',
   busy = false,
   online = false;
 let handFilter = 'all';
+let connectionVersion = 0;
 let toastTimer;
 function toast(text) {
   $('#toast').textContent = text;
@@ -70,6 +78,7 @@ async function api(path, body) {
   if (!r.ok) {
     const error = new Error(data.error || '请求失败');
     error.status = r.status;
+    error.data = data;
     throw error;
   }
   return data;
@@ -84,6 +93,7 @@ function playerName(id) {
   return state.players.find((p) => p.id === id)?.name || '—';
 }
 function render(v) {
+  if (state && state.code === v.code && v.revision < state.revision) return;
   if (state && v.revision !== state.revision && !busy) {
     if (hasActionPanel()) {
       closeActionPanel({ restoreFocus: false });
@@ -100,11 +110,15 @@ function render(v) {
     for (const f of p.fields) f.vines ??= [];
   }
   state = v;
+  $('#legacy-access').hidden = true;
+  $('#game').insertBefore($('#password-settings'), $('#action-area'));
+  renderPassword(v);
   decorateTable(v);
   $('#welcome').hidden = true;
   $('#game').hidden = false;
   $('#season-title').textContent =
-    (v.phase === 'lobby' ? '' : `第 ${v.year} 年 · `) + phases[v.phase];
+    (v.phase === 'lobby' ? '' : `第 ${v.year} 年 · `) +
+    (v.config?.board === 'tuscany' && v.phase === 'fall' ? '秋季 · 收获与酿酒' : phases[v.phase]);
   $('#code-label').textContent = '房间 ' + v.code;
   $('#turn-label').textContent =
     v.phase === 'finished'
@@ -125,9 +139,13 @@ function render(v) {
             : `轮到你 · 普通工人 ${myPlayer().workers} / 大工人 ${myPlayer().largeWorker ? 1 : 0}`
         : '';
   $('#lobby-panel').hidden = v.phase !== 'lobby';
+  renderExpansions(v, act, online);
   $('#start-game').disabled = !v.legal.canStart || !online;
   $('#wake-panel').hidden = v.phase !== 'wake';
-  $('#board').hidden = !['summer', 'winter'].includes(v.phase);
+  $('#board').hidden = !(
+    v.config?.board === 'tuscany' ? ['spring', 'summer', 'fall', 'winter'] : ['summer', 'winter']
+  ).includes(v.phase);
+  renderTuscanyBoard(v);
   $('#pass').disabled = !v.legal.canPass || !online;
   $('#hand-panel').hidden = v.phase === 'lobby';
   const wake = $('#wake-options');
@@ -139,17 +157,23 @@ function render(v) {
       el('span', s.bonus),
       el('span', s.playerId ? playerName(s.playerId) : '选择'),
     );
-    b.disabled = !!s.playerId || !v.legal.canWake || !online;
+    b.disabled =
+      !!s.playerId ||
+      !v.legal.canWake ||
+      !online ||
+      (v.config?.board === 'tuscany' && s.slot === 1);
     if (s.playerId) b.prepend(worker(v, s.playerId, false));
     b.dataset.slot = s.slot;
     b.onclick = () =>
-      s.slot === 5 ? setupEE('wake', state, act) : act({ type: 'wake', slot: s.slot });
+      s.slot === 5 && v.config?.board !== 'tuscany'
+        ? setupEE('wake', state, act)
+        : act({ type: 'wake', slot: s.slot });
     wake.append(b);
   }
   const board = $('#spaces');
   board.replaceChildren();
   for (const s of v.spaces || []) {
-    if (s.season !== v.phase && s.season !== 'any') continue;
+    if (s.season !== v.phase && s.season !== 'any' && !v.workerPlacements?.[s.id]?.length) continue;
     const b = el('button', null, 'space');
     b.dataset.space = s.id;
     b.append(art(actionArt[s.id] || 'estate', 'action-art'));
@@ -160,8 +184,10 @@ function render(v) {
     const drawSeat = (o, label, overflow = false) => {
       const seat = el('span', null, 'worker-slot' + (overflow ? ' overflow-seat' : ''));
       if (o) seat.append(worker(v, o.playerId, o.large));
-      else seat.textContent = label;
-      seat.title = o ? playerName(o.playerId) + (o.large ? ' · 大工人' : ' · 普通工人') : label;
+      else seat.textContent = label.startsWith('★') ? '★' : label;
+      seat.title = o
+        ? playerName(o.playerId) + (o.large ? ' · 大工人' : ' · 普通工人') + ' · ' + label
+        : label;
       seat.setAttribute('aria-label', seat.title);
       seats.append(seat);
     };
@@ -169,7 +195,7 @@ function render(v) {
       for (let slot = 1; slot <= s.capacity; slot++)
         drawSeat(
           occupied.find((o) => o.slot === slot),
-          s.capacity >= 2 && slot === 1 ? '奖励' : '空',
+          bonusKey(s, slot) ? '★ ' + bonusLabel(s, slot) : '空',
         );
     for (const o of occupied.filter((o) => o.slot <= 0)) drawSeat(o, '', true);
     b.append(seats);
@@ -181,7 +207,12 @@ function render(v) {
           ? '不限人数 · 每位工人获得 1 金币'
           : s.id === 'yoke'
             ? '自家行动 · 每年一次'
-            : `普通格 ${normal}/${s.capacity}` + (s.capacity >= 2 ? ' · 第 1 格有奖励' : ''),
+            : `普通格 ${normal}/${s.capacity}` +
+              (' · ' +
+                Array.from(
+                  { length: s.capacity },
+                  (_, i) => '第' + (i + 1) + '格 ' + bonusLabel(s, i + 1),
+                ).join('；')),
         'slots',
       ),
     );
@@ -236,13 +267,16 @@ function render(v) {
   if (choosingCards) handFilter = 'all';
   const filters = $('#hand-filters');
   filters.replaceChildren();
+  if (handFilter === 'structure' && !v.config?.structures) handFilter = 'all';
   for (const [type, label] of [
     ['all', '全部'],
     ['vine', '葡萄藤'],
     ['order', '订单'],
     ['summer', '夏访客'],
     ['winter', '冬访客'],
+    ['structure', '结构牌'],
   ]) {
+    if (type === 'structure' && !v.config?.structures) continue;
     const count = (v.hand || []).filter((c) => type === 'all' || c.type === type).length;
     const button = el('button', label + ' ' + count);
     button.type = 'button';
@@ -307,7 +341,14 @@ function render(v) {
     ps.append(renderEstate(v, p, buildings, types));
   const logs = $('#log');
   logs.replaceChildren(...[...(v.log || [])].reverse().map((s) => el('li', s)));
-  $('#rules-text').replaceChildren(...v.rulesNotes.map((n) => el('p', n)));
+  const reference = rulesForView(v);
+  const notes = [
+    reference.warning,
+    ...reference.topics
+      .find((t) => t.id === 'overview')
+      .cards.map(([title, text]) => title + '：' + text),
+  ].filter(Boolean);
+  $('#rules-text').replaceChildren(...notes.map((n) => el('p', n)));
   renderEE(v, act, online);
   renderHelp(v, online);
   if (focusedCard) {
@@ -317,29 +358,72 @@ function render(v) {
 }
 async function connect() {
   if (!token) return;
+  const version = ++connectionVersion;
+  const current = () => version === connectionVersion;
+  source?.close();
   try {
-    const v = await api('/api/state?token=' + encodeURIComponent(token));
+    const v = await api('/api/state');
+    if (!current()) return;
     online = true;
     render(v);
-    source?.close();
+    let polling = true;
+    try {
+      polling = (await api('/api/transport')).poll;
+    } catch {}
+    if (!current()) return;
+    const startPolling = () => {
+      source?.close();
+      source = pollState(
+        token,
+        (next) => {
+          if (!current()) return;
+          const changed =
+            !online || !state || state.code !== next.code || state.revision !== next.revision;
+          online = true;
+          setConnection('● 已连接 · 轮询同步');
+          if (changed) render(next);
+        },
+        (error) => {
+          if (!current()) return;
+          if (error.status === 401) return sessionEnded();
+          online = false;
+          setConnection('○ 断线，轮询正在重试…');
+          if (state) render(state);
+        },
+      );
+    };
+    if (polling) {
+      startPolling();
+      return;
+    }
     source = new EventSource('/api/events?token=' + encodeURIComponent(token));
+    source.addEventListener('session-ended', () => {
+      if (current()) sessionEnded();
+    });
     source.onopen = () => {
+      if (!current()) return;
       online = true;
       setConnection('● 已连接本地服务器');
       if (state) render(state);
     };
     source.onmessage = (e) => {
+      if (!current()) return;
       const next = JSON.parse(e.data),
         changed = !online || !state || state.code !== next.code || state.revision !== next.revision;
       online = true;
       if (changed) render(next);
     };
     source.onerror = () => {
+      if (!current()) return;
       online = false;
       setConnection('○ 断线，正在自动重连…');
       if (state) render(state);
+      startPolling();
     };
   } catch (e) {
+    if (!current()) return;
+    if (e.status === 403 && e.data?.passwordRequired) return showEnrollment(e.data);
+    if (e.status === 401) return sessionEnded();
     online = false;
     setConnection('连接失败');
     toast(e.message);
@@ -350,12 +434,21 @@ async function enter(create) {
   const name = $('#nickname').value.trim(),
     code = $('#room-code').value.trim().toUpperCase();
   if (!name) return toast('请填写昵称');
+  const password = $('#player-password').value;
+  if ([...password].length < 8 || [...password].length > 128) {
+    $('#player-password').focus();
+    return toast('密码需要8–128个字符');
+  }
   busy = true;
   try {
-    const r = await api(create ? '/api/create' : '/api/join', create ? { name } : { name, code });
+    const r = await api(
+      create ? '/api/create' : '/api/join',
+      create ? { name, password } : { name, code, password },
+    );
     token = r.token;
     localStorage.setItem('vineyard-ee-token', token);
     localStorage.setItem('vineyard-ee-name', name);
+    $('#player-password').value = '';
     await connect();
   } catch (e) {
     toast(e.message);
@@ -371,6 +464,10 @@ async function act(a) {
     render(v);
     return true;
   } catch (e) {
+    if (e.status === 401) {
+      sessionEnded();
+      return false;
+    }
     toast(e.message);
     const error = $('#action-error');
     if (error) error.textContent = e.message;
@@ -391,21 +488,28 @@ $('#create-room').onclick = () => enter(true);
 $('#join-room').onclick = () => enter(false);
 $('#start-game').onclick = () => act({ type: 'start' });
 $('#pass').onclick = () => {
+  const season = { spring: '春季', summer: '夏季', fall: '秋季', winter: '冬季' }[state.phase];
+  const nextSeason =
+    state.config?.board === 'tuscany'
+      ? { spring: '夏季', summer: '秋季', fall: '冬季' }[state.phase]
+      : '冬季';
   if (
     confirm(
-      state.phase === 'summer'
-        ? `确定结束夏季？剩余 ${myPlayer().workers + (myPlayer().largeWorker ? 1 : 0)} 位工人将保留到冬季。`
-        : '确定结束冬季？本年不再派遣工人，等待年末结算。',
+      state.phase === 'winter'
+        ? '确定结束冬季？本年不再派遣工人，进入年末结算。'
+        : `确定结束${season}？剩余待命工人保留到${nextSeason}。`,
     )
   )
     act({ type: 'pass' });
 };
 $('#switch-table').onclick = () => {
+  if (busy) return;
   if (
     !confirm('返回入口不会退出座位。原会话仍可刷新恢复；加入新房间会替换本浏览器保存的会话。继续？')
   )
     return;
   source?.close();
+  connectionVersion++;
   closeActionPanel({ restoreFocus: false });
   $('#resume-room').hidden = !token;
   online = false;
@@ -413,13 +517,92 @@ $('#switch-table').onclick = () => {
   $('#game').hidden = true;
   setConnection('已返回入口');
   renderHelp(null, false);
+  clearPassword();
 };
+function sessionEnded() {
+  connectionVersion++;
+  source?.close();
+  source = null;
+  token = '';
+  state = null;
+  online = false;
+  localStorage.removeItem('vineyard-ee-token');
+  closeActionPanel({ restoreFocus: false });
+  clearPassword();
+  for (const selector of ['#hand', '#players', '#log', '#ee-choice'])
+    $(selector)?.replaceChildren();
+  $('#resume-room').hidden = true;
+  $('#game').hidden = true;
+  $('#legacy-access').hidden = true;
+  $('#game').insertBefore($('#password-settings'), $('#action-area'));
+  $('#welcome').hidden = false;
+  renderHelp(null, false);
+  setConnection('已锁定 · 请用昵称和密码登录');
+}
+function showEnrollment(info) {
+  connectionVersion++;
+  source?.close();
+  state = null;
+  online = false;
+  closeActionPanel({ restoreFocus: false });
+  renderHelp(null, false);
+  for (const selector of ['#hand', '#players', '#log', '#ee-choice'])
+    $(selector)?.replaceChildren();
+  $('#game').hidden = true;
+  $('#welcome').hidden = true;
+  $('#legacy-access').hidden = false;
+  $('#legacy-seat').textContent = info.name + ' · 房间 ' + info.code;
+  $('#legacy-access').append($('#password-settings'));
+  renderPassword({ ...info, passwordSet: false });
+  $('#password-settings').open = true;
+  setConnection('设置密码后恢复旧对局');
+}
+$('#legacy-back').onclick = () => {
+  if (busy) return;
+  clearPassword();
+  $('#legacy-access').hidden = true;
+  $('#welcome').hidden = false;
+  $('#resume-room').hidden = !token;
+};
+$('#lock-session').onclick = async () => {
+  if (busy) return;
+  busy = true;
+  try {
+    await api('/api/logout', {});
+    sessionEnded();
+  } catch (error) {
+    if (error.status === 401) sessionEnded();
+    else toast(error.message);
+  } finally {
+    busy = false;
+  }
+};
+initPassword(
+  async (path, body) => {
+    if (busy) throw new Error('请等待当前操作完成');
+    busy = true;
+    // Close this transport before the server revokes it. Its last event must
+    // not race the replacement token or clear a newly restored private view.
+    connectionVersion++;
+    source?.close();
+    try {
+      const result = await api(path, body);
+      token = result.token;
+      localStorage.setItem('vineyard-ee-token', token);
+      return result;
+    } finally {
+      await connect();
+      busy = false;
+    }
+  },
+  async () => toast('密码已保存'),
+);
 $('#invite').onclick = async () => {
   const u = new URL(location.href);
   u.search = 'room=' + state.code;
   try {
     await navigator.clipboard.writeText(u.href);
-    toast('邀请链接已复制。请确保链接中的地址是服务器局域网IP。');
+    toast('邀请链接已复制。公网还需单独分享房主的访问口令；局域网请检查IP。');
   } catch {
     prompt('复制邀请链接（如为localhost，请改为服务器局域网IP）', u.href);
   }

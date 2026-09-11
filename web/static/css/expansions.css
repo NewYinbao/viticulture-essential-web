@@ -1,0 +1,38 @@
+#expansion-config {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #c9bd9e;
+  border-radius: 12px;
+}
+#expansion-config h4 {
+  margin: 0 0 0.75rem;
+}
+.expansion-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 0.8rem;
+}
+.expansion-options label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.expansion-options select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.55rem;
+  color: inherit;
+  font: inherit;
+}
+.expansion-options input {
+  width: auto;
+}
+
+/* The three-character lobby label must fit the existing round year badge. */
+#game:has(#lobby-panel:not([hidden])) #year-seal {
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
