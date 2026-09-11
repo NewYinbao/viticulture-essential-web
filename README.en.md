@@ -2,90 +2,97 @@
 
 [中文](README.md) · **English**
 
-Bring your vineyard to the browser. Gather 2–6 friends in one room to plant vines, make wine, play visitors, and fill orders.
+Run a vineyard in your browser with 2–6 friends: plant vines, make wine, play visitors, and fill orders. Supports Essential Edition and optional expansions. The game interface is primarily Chinese.
 
-Built with Go and plain HTML/CSS/JavaScript. A single executable embeds the web interface, Chinese card descriptions, and SVG artwork. LAN play needs neither Node.js nor an internet connection. This is the English project guide; the game interface is currently primarily Chinese.
+[Quick start](#quick-start) · [Features](#features) · [Version history](#version-history) · [Development guide](#development-guide) · [Buy me a HEYTEA](#buy-me-a-heytea)
 
-[Quick start](#quick-start) · [Version history](docs/README.md) · [Development guide](docs/guides/architecture.md) · [Buy me a HEYTEA](#buy-me-a-heytea)
+## Quick start
 
-## Download for Windows
+### Download and launch
 
-Open the [Releases page](https://github.com/NewYinbao/viticulture-essential-web/releases/latest), download the Windows x64 ZIP, extract it, and double-click Start-Viticulture.cmd. No Go or Node.js installation is needed. This repository is private; downloads require repository access.
+1. Open the [Releases page](https://github.com/NewYinbao/viticulture-essential-web/releases/latest) and download the **Windows x64 ZIP**.
+2. Extract the entire archive and double-click **Start-Viticulture.cmd**.
+3. Open **http://localhost:3015** in your browser.
+
+No Go or Node.js installation is required. LAN play works without internet access. This repository is private; downloads require repository access.
+
+### Build from source
+
+Install **Git and Go 1.25+** and ensure git and go are available in your terminal. Building the game does not require Node.js. Access to the private repository and GitHub authentication are required.
+
+Run in Windows PowerShell:
+
+~~~powershell
+git clone https://github.com/NewYinbao/viticulture-essential-web.git
+cd viticulture-essential-web
+powershell -NoProfile -File scripts/build-continuation.ps1
+.\Start-Viticulture.cmd
+~~~
+
+The executable is built at dist/Viticulture-Continuation.exe. Select LAN mode when launching, then open **http://localhost:3015**. Source launches store saves in runtime/continuation-data; preserve that directory when upgrading.
+
+On macOS / Linux, clone the repository, enter its directory, then build and run:
+
+~~~sh
+go build -trimpath -o viticulture ./cmd/viticulture
+./viticulture -addr 0.0.0.0:3015 -data ./runtime/continuation-data
+~~~
+
+### Play with friends
+
+The host creates a room with a name and seat password. Friends on the same LAN open `http://HOST_IP:3015` and join using the room code and their own names and passwords. The host selects expansions before starting; no separate launcher is needed.
+
+The download package stores saves in its `data` folder. Close the launch window to stop the server; stop the previous version and back up that folder before upgrading. Returning to an existing seat requires its original name and password.
+
+[Running and save details](docs/guides/running.md) · [Temporary public sharing](docs/guides/cloudflare.md)
 
 ## Features
 
 | Content | Support |
 | --- | --- |
-| Essential Edition | 2–6 players, 76 visitors, finite decks, private hands, and local saves |
-| Tuscany Essential | Four-season board, individual season transitions, influence; optional 36 structures and 11 special worker types |
-| Moor Visitors | 40 visitors added to the EE visitor decks |
-| Visit from the Rhine Valley | 80 replacement visitors; 4 Tuscany-dependent cards excluded on the EE board; never mixed with EE/Moor |
-| Player identity | Passwords per room seat, password changes, logout, and session revocation; a matching name alone cannot claim another seat |
-| Interface and help | Board-local card panels, hover/focus hints, inspectable planting conditions, contextual rules, and an optional beginner guide |
+| Essential Edition | 2–6 players, 76 visitors, private hands, and local saves |
+| Tuscany Essential | Four-season board and influence; optional 36 structures and 11 special worker types |
+| Moor Visitors | 40 visitors added to the base decks |
+| Visit from the Rhine Valley | 80 replacement visitors; the EE board excludes 4 Tuscany-dependent cards; not mixed with EE/Moor |
+| Multiplayer and interface | Seat passwords, reconnecting, board-local card panels, action requirements, rules, and beginner guidance |
 
-Disabled expansions stay out of in-game actions, rules, and guidance. World, Bordeaux, extra modules from the original Tuscany, and Automa are outside the current scope.
+Disabled expansions stay out of actions, rules, and guidance. World, Bordeaux, extra modules from the original Tuscany, and Automa are outside the current scope.
 
-## Quick start
+## Version history
 
-### Windows
+Three major development stages are summarized below. Linked notes describe the changes and validation scope.
 
-Building from source requires **Go 1.25+**. Run from the project root:
+| Stage | Highlights | Details |
+| --- | --- | --- |
+| Expansions and multiplayer | Tuscany, Moor, Rhine, seat passwords, and configuration-aware UI; available as Windows release v2026.09.12 | [Release Notes](docs/versions/06-expansions-563db1b/release-notes.md) |
+| Usability and guidance | Action availability hints, board-local card panels, planting checks, and beginner help | [Release Notes](docs/versions/05-guidance-80e9f7c/release-notes.md) |
+| Base game and architecture | EE rules, rule corrections, and separate game, server, storage, and web layers | [Release Notes](docs/versions/02-refactor-f9227db/release-notes.md) |
 
-```powershell
-powershell -NoProfile -File scripts/build-continuation.ps1
-.\Start-Viticulture-Continuation.cmd
-```
+## Development guide
 
-If the current executable is already built, double-click `Start-Viticulture-Continuation.cmd`.
+### Architecture
 
-1. The host opens `http://localhost:3015`, enters a name and seat password, and creates a room.
-2. Friends open `http://HOST_LAN_IP:3015`, then join with the room code and their own names and passwords.
-3. The host selects expansions before starting. Configuration is locked once setup begins. Returning to an existing seat requires its original name and password in that room.
-
-Saves live in `runtime/continuation-data`. Close the launch window or press Ctrl+C to stop the server. Only one process may use a save directory at a time. Executables, real saves, and session credentials are excluded from Git.
-
-### Other platforms / run from source
-
-```sh
-go run ./cmd/viticulture -addr 0.0.0.0:3015 -data ./runtime/continuation-data
-```
-
-Legacy launchers remain for compatibility. They do not automatically upgrade old executables or migrate games. See the [running guide](docs/guides/running.md) for version switching and initial password enrollment for old seats. Temporary public sharing must be explicitly enabled as described in the [Cloudflare guide](docs/guides/cloudflare.md).
-
-## Documentation and versions
-
-Versions are organized by actual Git commits. Each includes a **development record, validation record, and Release Notes**. Directory numbers provide chronological ordering; they are not new release tags.
-
-- [Documentation and version index](docs/README.md)
-- [Current gameplay version: expansions, passwords, and UI · 563db1b](docs/versions/06-expansions-563db1b/release-notes.md)
-- [Architecture](docs/guides/architecture.md) · [HTTP API](docs/guides/api.md) · [Build and testing](docs/guides/testing.md)
-
-The `563db1b` acceptance run passed 12/12 steps, including 24 configurations, 24 natural games, 36 structure fixtures, and representative complex interactions. Two independent functional reviews and a separate engineering review were completed. GitHub CI, including the Go race detector, passed. The natural-game strategy does not play visitors; this is not exhaustive coverage of every card combination. See the [version's validation record](docs/versions/06-expansions-563db1b/validation.md) for precise boundaries. Detailed development and validation records are in Chinese; Release Notes include English summaries.
-
-## Development
-
-```sh
-go test -tags "ee_rule_audit audit_diff" ./...
-go vet ./...
-npm ci
-npx playwright install chromium
-npm run test:units
-npm run format:check
-npm run test:ui
-```
-
-Node.js 22+ is only needed for development checks. On Windows, `scripts/check.ps1` runs Go audit tests, vet, and gofmt checks. The full expansion browser suite requires Windows Edge; see the [testing guide](docs/guides/testing.md).
+The backend uses Go; the frontend uses plain HTML, CSS, and JavaScript. One executable embeds the web interface and assets. The server applies game rules and sends each player their permitted view of the game.
 
 ```text
 cmd/viticulture/   Application entry point
 internal/game/    Rules, decks, and domain tests
-internal/server/  Passwords, HTTP, player views, and live updates
+internal/server/  HTTP, player sessions, and live updates
 internal/store/   Save persistence
 internal/sharing/ Optional public sharing
-web/static/       Plain web frontend and local assets
-tests/            Browser and native verification
-docs/             Current guides, version records, and documentation assets
+web/static/       Frontend and assets
+tests/            Browser and native checks
+scripts/          Build and check scripts
+docs/             Detailed guides and historical records
 ```
+
+[Detailed architecture](docs/guides/architecture.md)
+
+### Local development
+
+Follow [Build from source](#build-from-source) to obtain and run the project. Restart or rebuild the Go program after editing embedded frontend files. Frontend checks and browser tests also require **Node.js 22+**; run npm ci in the project directory to install development dependencies.
+
+[Full build and testing instructions](docs/guides/testing.md)
 
 ## Buy me a HEYTEA
 
@@ -93,8 +100,8 @@ If this project brings a good game night to you and your friends, scan with WeCh
 
 <img src="docs/assets/buy-me-a-heytea-wechat.png" alt="WeChat donation QR code" width="270" height="270">
 
-Thank you for your support. Choose a preset amount on the WeChat payment screen. [QR code and preset amount maintenance notes](docs/guides/support.md)
+Choose a preset amount after scanning. Thank you for your support.
 
 ## About this project
 
-This is an unofficial implementation of Viticulture and is not affiliated with its publisher. Version records retain rule references and interpretation boundaries. Reference implementations do not grant permission to redistribute commercial card artwork. No open-source license has been added to this repository; public visibility alone does not grant redistribution rights.
+This is an unofficial implementation of Viticulture and is not affiliated with its publisher. Game and asset rights belong to their respective owners. No open-source license has been added to this repository.

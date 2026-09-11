@@ -4,7 +4,7 @@
 
 ```powershell
 powershell -NoProfile -File scripts/build-continuation.ps1
-.\Start-Viticulture-Continuation.cmd
+.\Start-Viticulture.cmd
 ```
 
 续作服务使用端口 3015，存档目录 runtime/continuation-data。房主访问 http://localhost:3015，朋友使用房主的局域网 IP。建房、加入与恢复已有座位需要房间内对应的昵称和密码。
@@ -18,3 +18,5 @@ go run ./cmd/viticulture -addr 0.0.0.0:3015 -data ./runtime/continuation-data
 ```
 
 退出终端或 Ctrl+C 停止自己启动的服务。EXE、存档和本地验收产物不提交到 Git。公网访问见[分享指南](cloudflare.md)。
+
+项目根目录只保留 Start-Viticulture.cmd。启动时可选择局域网或公网分享，扩展包在房间开局设置中选择，与启动脚本无关。默认仍使用原续作的 runtime/continuation-data；旧版本 EXE 与存档保留，但不再提供旧版本快捷启动入口。

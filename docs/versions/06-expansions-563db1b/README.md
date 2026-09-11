@@ -2,7 +2,7 @@
 
 提交：`563db1b1c6f7a08e6e79dcab09c7c7b659fcd077` · 2026-09-12T01:45:00+08:00
 
-[开发记录](development.md) · [验证记录](validation.md) · [Release Notes](release-notes.md) · [所有版本](../../README.md)
+[开发记录](development.md) · [验证记录](validation.md) · [Release Notes](release-notes.md) · [所有版本](../../../README.md#版本记录)
 
 ## 原始记录
 
