@@ -1,3 +1,4 @@
+import { boardActionArt } from './action-art.js';
 import { migrateTabSession } from './tab-session.js';
 import { vineDescription } from './vine-art.js';
 import { renderTuscanyBoard } from './tuscany-board.js';
@@ -11,7 +12,7 @@ import { actionReason, bonusLabel, bonusKey } from './action-options.js';
 import { hint, installHints } from './hints.js';
 import { localCard } from './card-i18n.js';
 import { renderEE, cardArt, setupEE } from './ee-ui.js';
-import { art, worker, decorateTable, renderEstate, actionArt } from './graphics.js';
+import { art, worker, decorateTable, renderEstate } from './graphics.js';
 const $ = (s) => document.querySelector(s);
 installHints();
 initHelp();
@@ -181,7 +182,7 @@ function render(v) {
     if (s.season !== v.phase && s.season !== 'any' && !v.workerPlacements?.[s.id]?.length) continue;
     const b = el('button', null, 'space');
     b.dataset.space = s.id;
-    b.append(art(actionArt[s.id] || 'estate', 'action-art'));
+    b.append(boardActionArt(s));
     b.append(el('strong', s.name), el('span', s.description, 'desc'));
     const seats = el('div', null, 'worker-slots');
     const occupied =
