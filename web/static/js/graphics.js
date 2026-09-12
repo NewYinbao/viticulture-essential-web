@@ -79,6 +79,16 @@ function quality(p, type, wine, types) {
         : 3
     : 9;
   const min = wine ? (type === 'blush' ? 4 : type === 'sparkling' ? 7 : 1) : 1;
+  const cellarRequirement = (value) => {
+    if (!wine) return '';
+    if (value < min) return type === 'blush' ? '桃红酒最低品质为 4' : '起泡酒最低品质为 7';
+    if (value > 6) {
+      if (!p.buildings.includes('medium_cellar')) return '需先建中酒窖，再建大酒窖';
+      return '缺少大酒窖';
+    }
+    if (value > 3 && !p.buildings.includes('medium_cellar')) return '缺少中酒窖';
+    return '';
+  };
   for (let value = 1; value <= 9; value++) {
     const items = (wine ? p.wines : p.grapes).filter(
       (x) => (wine ? x.type : x.color) === type && x.value === value,
@@ -91,13 +101,15 @@ function quality(p, type, wine, types) {
     );
     slot.append(node('span', value, 'quality-number'));
     if (items.length) slot.append(art((wine ? 'bottle-' : 'grape-') + type, 'resource-token'));
+    const prerequisite = locked ? cellarRequirement(value) : '';
     const label =
       (types[type] || type) +
       (wine ? '酒' : '葡萄') +
       '品质' +
       value +
       '：' +
-      (items.length ? '已有资源' : locked ? '不可用' : '空槽');
+      (items.length ? '已有资源' : locked ? '不可用' : '空槽') +
+      (prerequisite ? '；' + prerequisite : '');
     slot.title = label;
     slot.setAttribute('aria-label', label);
     slots.append(slot);
@@ -255,7 +267,19 @@ export function renderEstate(v, p, buildings, types) {
   content.append(node('h4', '私人酒窖 · 葡萄酒品质', 'board-caption'));
   for (const type of ['red', 'white', 'blush', 'sparkling'])
     content.append(quality(p, type, true, types));
-  content.append(node('small', '斜线槽尚不可用：受酒窖等级 / 酒种最低品质限制。', 'cellar-note'));
+  const missingCellars = [
+    !p.buildings.includes('medium_cellar') && '中酒窖（解锁品质 4–6 与桃红酒）',
+    !p.buildings.includes('large_cellar') && '大酒窖（解锁品质 7–9 与起泡酒；需先有中酒窖）',
+  ].filter(Boolean);
+  content.append(
+    node(
+      'small',
+      missingCellars.length
+        ? '未解锁前置：' + missingCellars.join('；')
+        : '所有酒窖品质槽已解锁；桃红酒至少品质 4，起泡酒至少品质 7。',
+      'cellar-note',
+    ),
+  );
   box.append(content);
   return box;
 }

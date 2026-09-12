@@ -7,93 +7,259 @@ const fs = require('node:fs');
 const path = require('node:path');
 const net = require('node:net');
 const { execFileSync, spawn } = require('node:child_process');
-const tmp = temp('viticulture-usability-'), out = path.join(ROOT, 'artifacts/usability');
+const tmp = temp('viticulture-usability-'),
+  out = path.join(ROOT, 'artifacts/usability');
 fs.mkdirSync(out, { recursive: true });
 const report = { fixtures: true, checks: [], errors: [], screenshots: [] };
 let server, browser, base;
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 async function start() {
-  server = spawn(path.join(tmp, executable('server')), ['-addr', new URL(base).host, '-data', path.join(tmp, 'data')], { stdio: 'ignore' });
-  for (let i = 0; i < 100; i++) { try { if ((await fetch(base + '/api/health')).ok) return; } catch {} await delay(50); }
+  server = spawn(
+    path.join(tmp, executable('server')),
+    ['-addr', new URL(base).host, '-data', path.join(tmp, 'data')],
+    { stdio: 'ignore' },
+  );
+  for (let i = 0; i < 100; i++) {
+    try {
+      if ((await fetch(base + '/api/health')).ok) return;
+    } catch {}
+    await delay(50);
+  }
   throw Error('Server readiness failed');
 }
-async function stop() { if (server && server.exitCode === null) { const p = server; await new Promise((r) => { p.once('exit', r); p.kill(); }); } server = null; }
+async function stop() {
+  if (server && server.exitCode === null) {
+    const p = server;
+    await new Promise((r) => {
+      p.once('exit', r);
+      p.kill();
+    });
+  }
+  server = null;
+}
 async function api(url, body, token) {
-  const res = await fetch(base + url, { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
-  const data = await res.json(); assert.equal(res.status, 200, JSON.stringify(data)); return data;
+  const res = await fetch(base + url, {
+    method: body ? 'POST' : 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: 'Bearer ' + token } : {}),
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const data = await res.json();
+  assert.equal(res.status, 200, JSON.stringify(data));
+  return data;
 }
 (async () => {
   try {
-    execFileSync(GO, ['build', '-o', path.join(tmp, executable('server')), './cmd/viticulture'], { cwd: ROOT });
-    const port = await new Promise((resolve) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
-    base = 'http://127.0.0.1:' + port; await start();
-    const owner = await api('/api/create', {password:'test-password-123', name: '山丘庄主' });
-    for (const name of ['河谷庄主', '林间庄主']) await api('/api/join', {password:'test-password-123', name, code: owner.code });
+    execFileSync(GO, ['build', '-o', path.join(tmp, executable('server')), './cmd/viticulture'], {
+      cwd: ROOT,
+    });
+    const port = await new Promise((resolve) => {
+      const s = net.createServer();
+      s.listen(0, '127.0.0.1', () => {
+        const p = s.address().port;
+        s.close(() => resolve(p));
+      });
+    });
+    base = 'http://127.0.0.1:' + port;
+    await start();
+    const owner = await api('/api/create', { password: 'test-password-123', name: '山丘庄主' });
+    for (const name of ['河谷庄主', '林间庄主'])
+      await api('/api/join', { password: 'test-password-123', name, code: owner.code });
     const lobby = await api('/api/state', null, owner.token);
     await api('/api/action', { type: 'start', revision: lobby.revision }, owner.token);
     await stop();
-    const file = path.join(tmp, 'data/ee-state-v1.json'), original = JSON.parse(fs.readFileSync(file));
-    const template = original.Rooms[owner.code], store = { Rooms: {}, Sessions: {} };
-    const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'internal/game/cards/ee_cards.json')));
+    const file = path.join(tmp, 'data/ee-state-v1.json'),
+      original = JSON.parse(fs.readFileSync(file));
+    const template = original.Rooms[owner.code],
+      store = { Rooms: {}, Sessions: {} };
+    const catalog = JSON.parse(
+      fs.readFileSync(path.join(ROOT, 'internal/game/cards/ee_cards.json')),
+    );
     const vines = catalog.filter((c) => c.type === 'vine' && !c.trellis && !c.irrigation);
     function seed(code) {
       const room = structuredClone(template);
-      Object.assign(room, { code, phase: 'summer', year: 1, revision: 1, choices: [], context: null, resume: '', planned: [], turnId: room.players[0].id });
-      room.spaces.forEach((s) => s.occupied = []);
-      room.players.forEach((p, i) => { Object.assign(p, { wake: i + 1, coins: 12, workers: 2, largeWorker: true, passed: false, hand: [], buildings: [], grapes: [], wines: [] }); p.fields.forEach((f) => { f.vines = []; f.harvested = false; f.sold = false; }); });
-      store.Rooms[code] = room; store.Sessions[code] = { Code: code, playerId: room.turnId }; return room;
+      Object.assign(room, {
+        code,
+        phase: 'summer',
+        year: 1,
+        revision: 1,
+        choices: [],
+        context: null,
+        resume: '',
+        planned: [],
+        turnId: room.players[0].id,
+      });
+      room.spaces.forEach((s) => (s.occupied = []));
+      room.players.forEach((p, i) => {
+        Object.assign(p, {
+          wake: i + 1,
+          coins: 12,
+          workers: 2,
+          largeWorker: true,
+          passed: false,
+          hand: [],
+          buildings: [],
+          grapes: [],
+          wines: [],
+        });
+        p.fields.forEach((f) => {
+          f.vines = [];
+          f.harvested = false;
+          f.sold = false;
+        });
+      });
+      store.Rooms[code] = room;
+      store.Sessions[code] = { Code: code, playerId: room.turnId };
+      return room;
     }
-    const plant = seed('PLANT'); plant.players[0].hand = [vines[0], catalog.find((c) => c.type === 'order')];
+    const plant = seed('PLANT');
+    plant.players[0].hand = [vines[0], catalog.find((c) => c.type === 'order')];
     plant.players[1].hand = [vines[1], vines[2], catalog.find((c) => c.type === 'winter')];
-    plant.spaces.find((s) => s.id === 'tour').occupied = [{ slot: 2, playerId: plant.players[1].id, large: false }];
-    const yoke = seed('YOKE'); yoke.players[0].buildings = ['yoke']; yoke.players[0].fields[0].vines = [vines[0]]; yoke.players[0].fields[1].vines = [vines[1]];
-    const wine = seed('WINE'); wine.phase = 'winter'; wine.players[0].buildings = ['medium_cellar']; wine.players[0].grapes = [{ id: 'r', color: 'red', value: 5 }, { id: 'w', color: 'white', value: 4 }];
-    wine.spaces.find((s) => s.id === 'make_wine').occupied = [{ slot: 1, playerId: wine.players[1].id, large: false }, { slot: 2, playerId: wine.players[2].id, large: false }];
-    const stale = seed('STALE'); stale.players[0].hand = [vines[0]];
-    const paid = seed('PAID'); paid.players[0].coins = 2;
+    plant.spaces.find((s) => s.id === 'tour').occupied = [
+      { slot: 2, playerId: plant.players[1].id, large: false },
+    ];
+    const yoke = seed('YOKE');
+    yoke.players[0].buildings = ['yoke'];
+    yoke.players[0].fields[0].vines = [vines[0]];
+    yoke.players[0].fields[1].vines = [vines[1]];
+    const wine = seed('WINE');
+    wine.phase = 'winter';
+    wine.players[0].buildings = ['medium_cellar'];
+    wine.players[0].grapes = [
+      { id: 'r', color: 'red', value: 5 },
+      { id: 'w', color: 'white', value: 4 },
+    ];
+    wine.spaces.find((s) => s.id === 'make_wine').occupied = [
+      { slot: 1, playerId: wine.players[1].id, large: false },
+      { slot: 2, playerId: wine.players[2].id, large: false },
+    ];
+    const stale = seed('STALE');
+    stale.players[0].hand = [vines[0]];
+    const paid = seed('PAID');
+    paid.players[0].coins = 2;
     paid.context = { actorId: paid.turnId, returnTurnId: paid.turnId, space: 'summer_visitor' };
-    paid.choices = [{ id: 'cost-choice', kind: 'visitor', playerId: paid.turnId, options: ['buy', 'sell'], visitor: { cardId: 'summer-02', stage: 'effect', actorId: paid.turnId } }];
-    const selection = seed('SELECT'); selection.players[0].hand = [vines[0], vines[1]];
-    selection.context = { actorId: selection.turnId, returnTurnId: selection.turnId, space: 'summer_visitor' };
-    selection.choices = [{ id: 'cards-choice', kind: 'visitor', playerId: selection.turnId, options: ['coins', 'vp'], visitor: { cardId: 'summer-15', stage: 'effect', actorId: selection.turnId } }];
-    const build = seed('BUILD'); build.players[0].coins = 3; build.players[0].buildings = ['trellis'];
-    const visitor = seed('VISITOR'); visitor.players[0].hand = [catalog.find((c) => c.id === 'summer-02'), catalog.find((c) => c.id === 'summer-15')];
-    const order = seed('ORDER'); order.phase = 'winter';
-    const orderCard = catalog.find((c) => c.type === 'order'); order.players[0].hand = [orderCard];
-    order.players[0].wines = orderCard.requirements.map((w, i) => ({...w, id: 'wine-' + i}));
-    const harvest = seed('HARVEST'); harvest.phase = 'winter'; harvest.players[0].fields[0].vines = [vines[0]];
-    const spring = seed('SPRING'); spring.phase = 'wake'; spring.wakeSlots = Array.from({length:7}, (_,i) => ({slot:i+1,bonus:'奖励',playerId:''})); spring.players.forEach((p) => p.wake = 0);
-    const plantSubmit = seed('PLANT2'); plantSubmit.players[0].hand = [vines[0], vines[1]];
+    paid.choices = [
+      {
+        id: 'cost-choice',
+        kind: 'visitor',
+        playerId: paid.turnId,
+        options: ['buy', 'sell'],
+        visitor: { cardId: 'summer-02', stage: 'effect', actorId: paid.turnId },
+      },
+    ];
+    const selection = seed('SELECT');
+    selection.players[0].hand = [vines[0], vines[1]];
+    selection.context = {
+      actorId: selection.turnId,
+      returnTurnId: selection.turnId,
+      space: 'summer_visitor',
+    };
+    selection.choices = [
+      {
+        id: 'cards-choice',
+        kind: 'visitor',
+        playerId: selection.turnId,
+        options: ['coins', 'vp'],
+        visitor: { cardId: 'summer-15', stage: 'effect', actorId: selection.turnId },
+      },
+    ];
+    const build = seed('BUILD');
+    build.players[0].coins = 3;
+    build.players[0].buildings = ['trellis'];
+    const visitor = seed('VISITOR');
+    visitor.players[0].hand = [
+      catalog.find((c) => c.id === 'summer-02'),
+      catalog.find((c) => c.id === 'summer-15'),
+    ];
+    const order = seed('ORDER');
+    order.phase = 'winter';
+    const orderCard = catalog.find((c) => c.type === 'order');
+    order.players[0].hand = [orderCard];
+    order.players[0].wines = orderCard.requirements.map((w, i) => ({ ...w, id: 'wine-' + i }));
+    const harvest = seed('HARVEST');
+    harvest.phase = 'winter';
+    harvest.players[0].fields[0].vines = [vines[0]];
+    const spring = seed('SPRING');
+    spring.phase = 'wake';
+    spring.wakeSlots = Array.from({ length: 7 }, (_, i) => ({
+      slot: i + 1,
+      bonus: '奖励',
+      playerId: '',
+    }));
+    spring.players.forEach((p) => (p.wake = 0));
+    const plantSubmit = seed('PLANT2');
+    plantSubmit.players[0].hand = [vines[0], vines[1]];
     const demandingVine = catalog.find((c) => c.type === 'vine' && c.trellis && c.irrigation);
-    const blockedPlant = seed('BLOCK'); blockedPlant.players[0].hand = [demandingVine];
-    const capacityPlant = seed('CAPACITY'); capacityPlant.players[0].hand = [demandingVine]; capacityPlant.players[0].buildings = ['trellis','irrigation'];
-    capacityPlant.players[0].fields[0].vines = [catalog.find((c) => c.type === 'vine' && c.id !== demandingVine.id && c.red + c.white === 4)];
+    const blockedPlant = seed('BLOCK');
+    blockedPlant.players[0].hand = [demandingVine];
+    const capacityPlant = seed('CAPACITY');
+    capacityPlant.players[0].hand = [demandingVine];
+    capacityPlant.players[0].buildings = ['trellis', 'irrigation'];
+    capacityPlant.players[0].fields[0].vines = [
+      catalog.find((c) => c.type === 'vine' && c.id !== demandingVine.id && c.red + c.white === 4),
+    ];
     capacityPlant.players[0].fields[1].sold = capacityPlant.players[0].fields[2].sold = true;
-    const soldPlant = seed('SOLD'); soldPlant.players[0].hand = [vines[0]]; soldPlant.players[0].fields.forEach((f) => f.sold = true);
+    const soldPlant = seed('SOLD');
+    soldPlant.players[0].hand = [vines[0]];
+    soldPlant.players[0].fields.forEach((f) => (f.sold = true));
     seed('EMPTY');
-    const noWorker = seed('NOWORK'); noWorker.players[0].hand = [vines[0]]; noWorker.players[0].workers = 0; noWorker.players[0].largeWorker = false;
-    const guidePlant = seed('GUIDE'); guidePlant.players[0].hand = [vines[0]];
-    const guideWinter = seed('GUIDEW'); guideWinter.phase = 'winter'; guideWinter.players[0].fields[0].vines = [vines[0]];
-    fs.writeFileSync(file, JSON.stringify(authorizeFixtureStore(store))); await start();
+    const noWorker = seed('NOWORK');
+    noWorker.players[0].hand = [vines[0]];
+    noWorker.players[0].workers = 0;
+    noWorker.players[0].largeWorker = false;
+    const guidePlant = seed('GUIDE');
+    guidePlant.players[0].hand = [vines[0]];
+    const guideWinter = seed('GUIDEW');
+    guideWinter.phase = 'winter';
+    guideWinter.players[0].fields[0].vines = [vines[0]];
+    fs.writeFileSync(file, JSON.stringify(authorizeFixtureStore(store)));
+    await start();
     browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.on('pageerror', (e) => report.errors.push(e.message));
     await page.goto(base);
-    async function load(code) { await page.evaluate((c) => sessionStorage.setItem('vineyard-ee-token', c), code); await page.reload(); await page.locator('#code-label').waitFor({ state: 'visible' }); }
-    const pick = (group, value) => page.locator('#action-panel [data-group="' + group + '"][data-value="' + value + '"]');
-    async function submit() { const response = page.waitForResponse((r) => r.url().endsWith('/api/action')); await page.locator('#confirm-action').click(); const res = await response; const v = await res.json(); assert.equal(res.status(), 200, JSON.stringify(v)); await page.locator('#action-panel').waitFor({state: 'detached'}); return v; }
-    async function screenshot(name) { const dest = path.join(out, name + '.png'); await page.screenshot({ path: dest, fullPage: false }); report.screenshots.push(dest); }
+    async function load(code) {
+      await page.evaluate((c) => sessionStorage.setItem('vineyard-ee-token', c), code);
+      await page.reload();
+      await page.locator('#code-label').waitFor({ state: 'visible' });
+    }
+    const pick = (group, value) =>
+      page.locator('#action-panel [data-group="' + group + '"][data-value="' + value + '"]');
+    async function submit() {
+      const response = page.waitForResponse((r) => r.url().endsWith('/api/action'));
+      await page.locator('#confirm-action').click();
+      const res = await response;
+      const v = await res.json();
+      assert.equal(res.status(), 200, JSON.stringify(v));
+      await page.locator('#action-panel').waitFor({ state: 'detached' });
+      return v;
+    }
+    async function screenshot(name) {
+      const dest = path.join(out, name + '.png');
+      await page.screenshot({ path: dest, fullPage: false });
+      report.screenshots.push(dest);
+    }
     await load('PLANT');
-    assert.equal(await page.locator('[data-space=tour] .worker-slot').nth(0).getAttribute('aria-label'), '★ +1金币');
-    assert.equal(await page.locator('[data-space=tour] .worker-slot').nth(1).locator('img').count(), 1);
+    assert.equal(
+      await page.locator('[data-space=tour] .worker-slot').nth(0).getAttribute('aria-label'),
+      '★ +1金币',
+    );
+    assert.equal(
+      await page.locator('[data-space=tour] .worker-slot').nth(1).locator('img').count(),
+      1,
+    );
     assert.match(await page.locator('[data-space=gain_coin] .slots').innerText(), /不限人数/);
     assert.match(await page.locator('[data-space=yoke]').getAttribute('data-hint'), /轭/);
     assert(await page.locator('[data-space=yoke]').isDisabled());
     const opponent = page.locator('.player').nth(1);
     assert.match(await opponent.locator('.public-hand-counts').innerText(), /葡萄藤 2/);
     report.checks.push('slot indices, unlimited coin, private yoke and public hand counts');
-    await page.locator('[data-filter=vine]').click(); assert.equal(await page.locator('#hand .card:visible').count(), 1);
-    await page.locator('[data-filter=all]').click(); assert.equal(await page.locator('#hand .card:visible').count(), 2);
+    await page.locator('[data-filter=vine]').click();
+    assert.equal(await page.locator('#hand .card:visible').count(), 1);
+    await page.locator('[data-filter=all]').click();
+    assert.equal(await page.locator('#hand .card:visible').count(), 2);
     await page.locator('[data-space=plant]').click();
     assert.equal(await page.locator('#action-panel [data-group=mode]').count(), 0);
     assert.equal(await page.locator('#action-panel select').count(), 0);
@@ -101,48 +267,69 @@ async function api(url, body, token) {
     await pick('cards', vines[0].id).click();
     assert.equal(await page.locator('#action-panel [data-group^=field-]').count(), 3);
     assert(await page.locator('#confirm-action').isDisabled());
-    await pick('field-' + vines[0].id, 0).click(); assert(await page.locator('#confirm-action').isEnabled());
+    await pick('field-' + vines[0].id, 0).click();
+    assert(await page.locator('#confirm-action').isEnabled());
     assert.equal(await pick('declineBonus', 'no').getAttribute('aria-pressed'), 'true');
     await page.locator('.action-back').click();
     await page.locator('[data-space=draw_vine]').click();
     assert.equal(await pick('declineBonus', 'no').getAttribute('aria-pressed'), 'true');
     await page.keyboard.press('Escape');
-    assert.equal(await page.locator('[data-space=draw_vine]').evaluate((e) => e === document.activeElement), true);
-    report.checks.push('hand filters, plant-only action, field selection and usable bonus defaults');
-    await page.evaluate(() => window.scrollTo(0, 0)); await screenshot('desktop-table');
+    assert.equal(
+      await page.locator('[data-space=draw_vine]').evaluate((e) => e === document.activeElement),
+      true,
+    );
+    report.checks.push(
+      'hand filters, plant-only action, field selection and usable bonus defaults',
+    );
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await screenshot('desktop-table');
     await page.setViewportSize({ width: 390, height: 844 });
     await screenshot('mobile-table');
     await page.locator('.table-nav a[href="#hand-panel"]').click();
-    assert(await page.locator('#hand-filters').isVisible()); await screenshot('mobile-hand');
+    assert(await page.locator('#hand-filters').isVisible());
+    await screenshot('mobile-hand');
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-    const nav = await page.locator('.table-nav').boundingBox(); assert(nav.y + nav.height <= 844);
+    const nav = await page.locator('.table-nav').boundingBox();
+    assert(nav.y + nav.height <= 844);
     report.checks.push('390px layout has no horizontal overflow; fixed navigation reaches hand');
-    await load('YOKE'); await page.locator('[data-space=yoke]').click();
-    await pick('mode', 'uproot').click(); await pick('field', 1).click();
+    await load('YOKE');
+    await page.locator('[data-space=yoke]').click();
+    await pick('mode', 'uproot').click();
+    await pick('field', 1).click();
     assert.equal(await page.locator('#action-panel [data-group=cardId]').count(), 1);
     await pick('cardId', vines[1].id).click();
-    const uprooted = await submit(); assert.equal(uprooted.hand[0].id, vines[1].id);
+    const uprooted = await submit();
+    assert.equal(uprooted.hand[0].id, vines[1].id);
     report.checks.push('yoke uproot options follow field; real server accepts chosen vine');
-    await load('WINE'); await page.locator('[data-space=make_wine]').click();
+    await load('WINE');
+    await page.locator('[data-space=make_wine]').click();
     assert.equal(await pick('worker', 'large').getAttribute('aria-pressed'), 'true');
     await pick('bottle', 2).click();
-    await pick('grapes', 0).click(); await pick('grapes', 1).click();
+    await pick('grapes', 0).click();
+    await pick('grapes', 1).click();
     assert.match(await page.locator('.action-preview').innerText(), /第 2 瓶：/);
     assert.match(await page.locator('.action-preview').innerText(), /桃红酒 · 品质 6/);
-    assert.match(await page.locator('#action-panel').innerText(), /最多 2 瓶/); await screenshot('mobile-wine-panel');
-    const made = await submit(); assert.equal(made.players[0].wines[0].type, 'blush'); assert.equal(made.players[0].wines[0].value, 6);
+    assert.match(await page.locator('#action-panel').innerText(), /最多 2 瓶/);
+    await screenshot('mobile-wine-panel');
+    const made = await submit();
+    assert.equal(made.players[0].wines[0].type, 'blush');
+    assert.equal(made.players[0].wines[0].value, 6);
     report.checks.push('full board defaults to large worker; wine preview matches server result');
     await load('STALE');
-    await page.route('**/api/events?*', (route) => route.abort()); await page.reload();
+    await page.route('**/api/events?*', (route) => route.abort());
+    await page.reload();
     await page.locator('#code-label').waitFor({ state: 'visible' });
-    await page.unroute('**/api/events?*'); await page.reload();
+    await page.unroute('**/api/events?*');
+    await page.reload();
     await page.locator('[data-space=plant]').click();
     await api('/api/action', { type: 'place', space: 'gain_coin', revision: 1 }, 'STALE');
-    await page.locator('#action-panel').waitFor({state: 'detached'});
+    await page.locator('#action-panel').waitFor({ state: 'detached' });
     assert.match(await page.locator('#toast').innerText(), /局面已更新/);
     report.checks.push('incoming new revision closes stale action panel');
-    page.once('dialog', (d) => d.accept()); await page.locator('#switch-table').click();
-    assert(await page.locator('#resume-room').isVisible()); await page.locator('#resume-room').click();
+    page.once('dialog', (d) => d.accept());
+    await page.locator('#switch-table').click();
+    assert(await page.locator('#resume-room').isVisible());
+    await page.locator('#resume-room').click();
     await page.locator('#code-label').waitFor({ state: 'visible' });
     assert.match(await page.locator('#code-label').innerText(), /STALE/);
     report.checks.push('return-to-entry preserves explicit resume path');
@@ -158,185 +345,337 @@ async function api(url, body, token) {
     assert.equal(await page.locator('#action-panel select, dialog:modal').count(), 0);
     assert.equal(await pick('building', 'trellis').getAttribute('aria-disabled'), 'true');
     await pick('building', 'trellis').focus();
-    assert.match(await page.locator('#context-hint').innerText(), /允许种植[\s\S]*本次 1 金币[\s\S]*已建造/);
+    assert.match(
+      await page.locator('#context-hint').innerText(),
+      /允许种植[\s\S]*本次 1 金币[\s\S]*已建造/,
+    );
     assert.equal(await pick('building', 'large_cellar').getAttribute('aria-disabled'), 'true');
     assert.match(await pick('building', 'large_cellar').getAttribute('data-hint'), /需要中酒窖/);
-    await pick('building', 'medium_cellar').click(); assert(await page.locator('#confirm-action').isEnabled());
+    await pick('building', 'medium_cellar').click();
+    assert(await page.locator('#confirm-action').isEnabled());
     await pick('declineBonus', 'yes').click();
     assert.match(await pick('building', 'medium_cellar').innerText(), /4 金币/);
     assert.equal(await pick('building', 'medium_cellar').getAttribute('aria-disabled'), 'true');
     assert(await page.locator('#confirm-action').isDisabled());
     await pick('declineBonus', 'no').click();
-    const boardBox = await page.locator('#board').boundingBox(), panelBox = await page.locator('#action-panel').boundingBox(), estateBox = await page.locator('#estate-panel').boundingBox();
-    assert(panelBox.x >= boardBox.x && panelBox.y >= boardBox.y && panelBox.x + panelBox.width <= boardBox.x + boardBox.width && panelBox.y + panelBox.height <= boardBox.y + boardBox.height);
+    const boardBox = await page.locator('#board').boundingBox(),
+      panelBox = await page.locator('#action-panel').boundingBox(),
+      estateBox = await page.locator('#estate-panel').boundingBox();
+    assert(
+      panelBox.x >= boardBox.x &&
+        panelBox.y >= boardBox.y &&
+        panelBox.x + panelBox.width <= boardBox.x + boardBox.width &&
+        panelBox.y + panelBox.height <= boardBox.y + boardBox.height,
+    );
     assert(panelBox.x + panelBox.width < estateBox.x);
     assert(await page.locator('#players .stats').first().isVisible());
-    assert.equal(await page.locator('#estate-panel').evaluate((e) => getComputedStyle(e).filter), 'none');
+    assert.equal(
+      await page.locator('#estate-panel').evaluate((e) => getComputedStyle(e).filter),
+      'none',
+    );
     assert.equal(await page.locator('#estate-panel [inert]').count(), 0);
-    assert(await page.locator('#spaces').evaluate(e => e.inert));
+    assert(await page.locator('#spaces').evaluate((e) => e.inert));
     assert(await page.locator('.board-panorama').isVisible());
     assert.equal(await page.locator('#action-panel').getAttribute('role'), 'dialog');
     await page.locator('#estate-panel .player details').first().locator('summary').click();
     assert.equal(await pick('building', 'medium_cellar').getAttribute('aria-pressed'), 'true');
     await pick('building', 'medium_cellar').focus();
-    await page.locator('#context-hint').waitFor({state: 'visible'});
+    await page.locator('#context-hint').waitFor({ state: 'visible' });
     const tipBox = await page.locator('#context-hint').boundingBox();
     assert(tipBox.x >= panelBox.x && tipBox.x + tipBox.width <= panelBox.x + panelBox.width);
     await screenshot('desktop-building-panel');
-    await page.setViewportSize({width:390,height:844});
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.locator('#action-panel').scrollIntoViewIfNeeded();
     await pick('building', 'medium_cellar').click();
     assert(await page.locator('.action-assets').isVisible());
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-    const mobilePanel = await page.locator('#action-panel').boundingBox(), mobileEstate = await page.locator('#estate-panel').boundingBox();
+    const mobilePanel = await page.locator('#action-panel').boundingBox(),
+      mobileEstate = await page.locator('#estate-panel').boundingBox();
     assert(mobilePanel.y + mobilePanel.height <= mobileEstate.y);
     const mobileTip = await page.locator('#context-hint').boundingBox();
-    assert(mobileTip.x >= mobilePanel.x && mobileTip.x + mobileTip.width <= mobilePanel.x + mobilePanel.width);
+    assert(
+      mobileTip.x >= mobilePanel.x &&
+        mobileTip.x + mobileTip.width <= mobilePanel.x + mobilePanel.width,
+    );
     await screenshot('mobile-building-panel');
     await page.locator('.action-assets a').click();
     assert.equal(await page.locator('.table-nav a').first().getAttribute('href'), '#action-panel');
     await page.locator('.table-nav a').first().click();
     assert.equal(await pick('building', 'medium_cellar').getAttribute('aria-pressed'), 'true');
-    const built = await submit(); assert.equal(built.players[0].coins, 0); assert(built.players[0].buildings.includes('medium_cellar'));
-    report.checks.push('local panel leaves estate interactive; 8 building cards show ownership, effects and live discounted costs; responsive layout; real build result');
-    await load('VISITOR'); await page.locator('[data-space=summer_visitor]').click();
+    const built = await submit();
+    assert.equal(built.players[0].coins, 0);
+    assert(built.players[0].buildings.includes('medium_cellar'));
+    report.checks.push(
+      'local panel leaves estate interactive; 8 building cards show ownership, effects and live discounted costs; responsive layout; real build result',
+    );
+    await load('VISITOR');
+    await page.locator('[data-space=summer_visitor]').click();
     assert.equal(await page.locator('#action-panel .hand-choice img').count(), 2);
     const revisionBefore = (await api('/api/state', null, 'VISITOR')).revision;
-    await pick('cardId', 'summer-02').click(); await page.keyboard.press('Escape');
+    await pick('cardId', 'summer-02').click();
+    await page.keyboard.press('Escape');
     assert.equal((await api('/api/state', null, 'VISITOR')).revision, revisionBefore);
-    await page.locator('[data-space=summer_visitor]').click(); await pick('cardId', 'summer-02').click();
+    await page.locator('[data-space=summer_visitor]').click();
+    await pick('cardId', 'summer-02').click();
     await screenshot('mobile-visitor-cards');
-    const played = await submit(); assert.equal(played.pendingChoice.visitor.cardId, 'summer-02');
-    report.checks.push('visitor artwork selection posts correct card ID; Escape/cancel sends no action');
-    await load('ORDER'); await page.locator('[data-space=fill_order]').click();
-    await pick('cardId', orderCard.id).click(); assert(await page.locator('#confirm-action').isDisabled());
-    for (let i=0;i<orderCard.requirements.length;i++) await pick('wines', 'wine-' + i).click();
-    const filled = await submit(); assert.equal(filled.players[0].wines.length, 0); assert.equal(filled.hand.length, 0);
-    await load('HARVEST'); await page.locator('[data-space=harvest]').click(); await pick('fields', 0).click();
-    const harvested = await submit(); assert(harvested.players[0].fields[0].harvested);
-    await load('PLANT2'); await page.locator('[data-space=plant]').click();
-    await pick('cards', vines[0].id).click(); await pick('field-' + vines[0].id, 0).click();
-    await pick('cards', vines[1].id).click(); await pick('field-' + vines[1].id, 0).click();
-    const planted = await submit(); assert.equal(planted.players[0].fields[0].vines.length, 2);
-    await load('SPRING'); await page.locator('#wake-options [data-slot="5"]').click();
+    const played = await submit();
+    assert.equal(played.pendingChoice.visitor.cardId, 'summer-02');
+    report.checks.push(
+      'visitor artwork selection posts correct card ID; Escape/cancel sends no action',
+    );
+    await load('ORDER');
+    await page.locator('[data-space=fill_order]').click();
+    await pick('cardId', orderCard.id).click();
+    assert(await page.locator('#confirm-action').isDisabled());
+    for (let i = 0; i < orderCard.requirements.length; i++)
+      await pick('wines', 'wine-' + i).click();
+    const filled = await submit();
+    assert.equal(filled.players[0].wines.length, 0);
+    assert.equal(filled.hand.length, 0);
+    await load('HARVEST');
+    await page.locator('[data-space=harvest]').click();
+    await pick('fields', 0).click();
+    const harvested = await submit();
+    assert(harvested.players[0].fields[0].harvested);
+    await load('PLANT2');
+    await page.locator('[data-space=plant]').click();
+    await pick('cards', vines[0].id).click();
+    await pick('field-' + vines[0].id, 0).click();
+    await pick('cards', vines[1].id).click();
+    await pick('field-' + vines[1].id, 0).click();
+    const planted = await submit();
+    assert.equal(planted.players[0].fields[0].vines.length, 2);
+    await load('SPRING');
+    await page.locator('#wake-options [data-slot="5"]').click();
     assert.equal(await page.locator('#wake-panel #action-panel').count(), 1);
-    await pick('color', 'winter').click(); const woke = await submit(); assert.equal(woke.hand[0].type, 'winter');
-    report.checks.push('order wine cards, harvest fields, multiple vines and wake reward cards accepted by real server');
+    await pick('color', 'winter').click();
+    const woke = await submit();
+    assert.equal(woke.hand[0].type, 'winter');
+    report.checks.push(
+      'order wine cards, harvest fields, multiple vines and wake reward cards accepted by real server',
+    );
     await load('PAID');
     const unavailable = page.locator('[data-visitor-option=buy]');
     assert.equal(await unavailable.getAttribute('aria-disabled'), 'true');
-    await unavailable.hover(); assert.match(await page.locator('#context-hint').innerText(), /还差 7 金币/);
-    await unavailable.focus(); assert.equal(await unavailable.getAttribute('aria-describedby'), 'context-hint');
-    assert.equal(await page.locator('[data-visitor-option=sell]').getAttribute('aria-pressed'), 'true');
+    await unavailable.hover();
+    assert.match(await page.locator('#context-hint').innerText(), /还差 7 金币/);
+    await unavailable.focus();
+    assert.equal(await unavailable.getAttribute('aria-describedby'), 'context-hint');
+    assert.equal(
+      await page.locator('[data-visitor-option=sell]').getAttribute('aria-pressed'),
+      'true',
+    );
     assert(await page.locator('[data-visitor-submit]').isEnabled());
     assert.equal(await page.locator('.visitor-details').getAttribute('open'), null);
     await screenshot('mobile-visitor-prerequisite');
     await load('SELECT');
-    assert.equal(await page.locator('[data-visitor-option=vp]').getAttribute('aria-disabled'), 'true');
+    assert.equal(
+      await page.locator('[data-visitor-option=vp]').getAttribute('aria-disabled'),
+      'true',
+    );
     assert(await page.locator('[data-visitor-submit]').isDisabled());
     const eligible = page.locator('#hand .visitor-eligible');
-    await eligible.nth(0).click(); assert(await page.locator('[data-visitor-submit]').isDisabled());
-    await eligible.nth(1).click(); assert(await page.locator('[data-visitor-submit]').isEnabled());
+    await eligible.nth(0).click();
+    assert(await page.locator('[data-visitor-submit]').isDisabled());
+    await eligible.nth(1).click();
+    assert(await page.locator('[data-visitor-submit]').isEnabled());
     assert.match(await page.locator('.form-readiness').innerText(), /已就绪/);
-    report.checks.push('unaffordable options have hover/focus reasons; legal option defaults; confirmation reacts to resource selection');
+    report.checks.push(
+      'unaffordable options have hover/focus reasons; legal option defaults; confirmation reacts to resource selection',
+    );
     await page.setViewportSize({ width: 1440, height: 1000 });
     await load('BLOCK');
     const blockedEntry = page.locator('[data-space=plant]');
     assert.equal(await blockedEntry.getAttribute('aria-disabled'), 'false');
     assert.match(await blockedEntry.innerText(), /查看条件/);
     const beforeInspection = await api('/api/state', null, 'BLOCK');
-    await blockedEntry.click(); await pick('cards', demandingVine.id).click();
+    await blockedEntry.click();
+    await pick('cards', demandingVine.id).click();
     assert.equal(await pick('cards', demandingVine.id).getAttribute('aria-pressed'), 'false');
     assert.equal(await pick('cards', demandingVine.id).getAttribute('aria-disabled'), 'false');
     assert(await page.locator('#vine-inspection').evaluate((e) => e === document.activeElement));
-    assert.match(await page.locator('#vine-inspection').innerText(), /棚架 · 缺少[\s\S]*灌溉 · 缺少/);
-    assert.match(await page.locator('#vine-inspection').innerText(), /空余 5[\s\S]*空余 6[\s\S]*空余 7/);
+    assert.match(
+      await page.locator('#vine-inspection').innerText(),
+      /棚架 · 缺少[\s\S]*灌溉 · 缺少/,
+    );
+    assert.match(
+      await page.locator('#vine-inspection').innerText(),
+      /空余 5[\s\S]*空余 6[\s\S]*空余 7/,
+    );
     assert(await page.locator('#confirm-action').isDisabled());
-    await page.locator('#vine-inspection').scrollIntoViewIfNeeded(); await screenshot('desktop-plant-conditions');
-    const afterInspection = await api('/api/state', null, 'BLOCK'); assert.deepEqual(afterInspection, beforeInspection);
-    await load('CAPACITY'); await page.locator('[data-space=plant]').click(); await pick('cards', demandingVine.id).click();
-    assert.match(await page.locator('#vine-inspection').innerText(), /棚架 · ✓ 已有[\s\S]*空余 1[\s\S]*差 3[\s\S]*已出售/);
+    await page.locator('#vine-inspection').scrollIntoViewIfNeeded();
+    await screenshot('desktop-plant-conditions');
+    const afterInspection = await api('/api/state', null, 'BLOCK');
+    assert.deepEqual(afterInspection, beforeInspection);
+    await load('CAPACITY');
+    await page.locator('[data-space=plant]').click();
+    await pick('cards', demandingVine.id).click();
+    assert.match(
+      await page.locator('#vine-inspection').innerText(),
+      /棚架 · ✓ 已有[\s\S]*空余 1[\s\S]*差 3[\s\S]*已出售/,
+    );
     assert(await page.locator('#confirm-action').isDisabled());
-    await load('SOLD'); await page.locator('[data-space=plant]').click(); await pick('cards', vines[0].id).click();
-    assert.equal(await page.locator('.vine-field-checks .missing').count(), 3); assert(await page.locator('#confirm-action').isDisabled());
-    await load('EMPTY'); await page.locator('[data-space=plant]').click();
-    assert.match(await page.locator('.plant-empty').innerText(), /葡萄藤市场/); assert(await page.locator('#confirm-action').isDisabled());
-    await load('NOWORK'); await page.locator('[data-space=plant]').click(); await pick('cards', vines[0].id).click(); await pick('field-' + vines[0].id, 0).click();
-    assert.match(await page.locator('.action-readiness').innerText(), /没有待命工人/); assert(await page.locator('#confirm-action').isDisabled());
-    report.checks.push('blocked planting remains inspectable; all missing buildings, capacity and sold fields explained; empty hand and no-worker confirmations guarded; inspection never changes state');
+    await load('SOLD');
+    await page.locator('[data-space=plant]').click();
+    await pick('cards', vines[0].id).click();
+    assert.equal(await page.locator('.vine-field-checks .missing').count(), 3);
+    assert(await page.locator('#confirm-action').isDisabled());
+    await load('EMPTY');
+    await page.locator('[data-space=plant]').click();
+    assert.match(await page.locator('.plant-empty').innerText(), /葡萄藤市场/);
+    assert(await page.locator('#confirm-action').isDisabled());
+    await load('NOWORK');
+    await page.locator('[data-space=plant]').click();
+    await pick('cards', vines[0].id).click();
+    await pick('field-' + vines[0].id, 0).click();
+    assert.match(await page.locator('.action-readiness').innerText(), /没有待命工人/);
+    assert(await page.locator('#confirm-action').isDisabled());
+    report.checks.push(
+      'blocked planting remains inspectable; all missing buildings, capacity and sold fields explained; empty hand and no-worker confirmations guarded; inspection never changes state',
+    );
     await load('GUIDE');
     assert(await page.locator('#beginner-guide').isHidden());
     const guideToggle = page.locator('.table-nav [data-guide-toggle]');
-    await guideToggle.click(); assert.equal(await guideToggle.getAttribute('aria-pressed'), 'true');
+    await guideToggle.click();
+    assert.equal(await guideToggle.getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('#beginner-guide').getAttribute('data-step'), '0');
-    await page.locator('[data-guide-next]').focus(); await page.keyboard.press('Enter');
+    await page.locator('[data-guide-next]').focus();
+    await page.keyboard.press('Enter');
     assert.equal(await page.locator('#beginner-guide').getAttribute('data-step'), '1');
     assert(await page.locator('[data-guide-next]').evaluate((e) => e === document.activeElement));
-    await page.locator('[data-guide-locate]').click(); assert(await page.locator('#estate-panel').evaluate((e) => e === document.activeElement));
-    await page.locator('[data-guide-next]').click(); await page.locator('[data-guide-next]').click(); await page.locator('[data-guide-next]').click();
+    await page.locator('[data-guide-locate]').click();
+    assert(await page.locator('#estate-panel').evaluate((e) => e === document.activeElement));
+    await page.locator('[data-guide-next]').click();
+    await page.locator('[data-guide-next]').click();
+    await page.locator('[data-guide-next]').click();
     assert.equal(await page.locator('#beginner-guide').getAttribute('data-mode'), 'context');
     assert.match(await page.locator('#beginner-guide').innerText(), /种下/);
-    await page.reload(); await page.locator('#code-label').waitFor({state:'visible'});
+    await page.reload();
+    await page.locator('#code-label').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#beginner-guide').getAttribute('data-mode'), 'context');
-    assert.equal(await page.locator('.table-nav [data-guide-toggle]').getAttribute('aria-pressed'), 'true');
+    assert.equal(
+      await page.locator('.table-nav [data-guide-toggle]').getAttribute('aria-pressed'),
+      'true',
+    );
     const guideBefore = await api('/api/state', null, 'GUIDE');
-    await page.locator('[data-space=plant]').click(); await pick('cards', vines[0].id).click(); await pick('field-' + vines[0].id, 0).click();
+    await page.locator('[data-space=plant]').click();
+    await pick('cards', vines[0].id).click();
+    await pick('field-' + vines[0].id, 0).click();
     assert.match(await page.locator('.action-lesson').innerText(), /缺少条件/);
     await page.locator('#vine-inspection [data-rule-topic]').click();
-    assert.equal(await page.locator('.rule-topics [aria-pressed=true]').getAttribute('data-topic'), 'planting');
+    assert.equal(
+      await page.locator('.rule-topics [aria-pressed=true]').getAttribute('data-topic'),
+      'planting',
+    );
     assert.equal(await page.locator('.rule-topics button').count(), 8);
     assert.equal(await page.locator('#rules-help .rule-cards article').count(), 4);
-    assert.equal(await page.locator('dialog:modal, #rules-help [inert], #estate-panel [inert]').count(), 0);
+    assert.equal(
+      await page.locator('dialog:modal, #rules-help [inert], #estate-panel [inert]').count(),
+      0,
+    );
     await screenshot('desktop-rules');
-    await page.keyboard.press('Escape'); assert(await page.locator('#rules-help').isHidden());
+    await page.keyboard.press('Escape');
+    assert(await page.locator('#rules-help').isHidden());
     assert(await page.locator('#action-panel').isVisible());
     assert.equal(await pick('cards', vines[0].id).getAttribute('aria-pressed'), 'true');
     assert.equal(await pick('field-' + vines[0].id, 0).getAttribute('aria-pressed'), 'true');
-    await page.locator('.table-nav [data-guide-toggle]').click(); assert.equal(await page.locator('.action-lesson').count(), 0);
+    await page.locator('.table-nav [data-guide-toggle]').click();
+    assert.equal(await page.locator('.action-lesson').count(), 0);
     assert.equal(await pick('cards', vines[0].id).getAttribute('aria-pressed'), 'true');
     assert.deepEqual(await api('/api/state', null, 'GUIDE'), guideBefore);
     await page.locator('.table-nav [data-guide-toggle]').click();
     await page.keyboard.press('Escape');
     await page.locator('.table-nav [data-rules-open]').click();
-    for (const name of ['overview','seasons','workers','planting','harvest','wine','orders','buildings']) {
-      await page.locator('[data-topic="'+name+'"]').click(); assert.equal(await page.locator('.rule-topics [aria-pressed=true]').getAttribute('data-topic'), name);
-      assert(await page.locator('.rule-cards article').count() >= 4);
+    for (const name of [
+      'overview',
+      'seasons',
+      'workers',
+      'planting',
+      'harvest',
+      'wine',
+      'orders',
+      'buildings',
+    ]) {
+      await page.locator('[data-topic="' + name + '"]').click();
+      assert.equal(
+        await page.locator('.rule-topics [aria-pressed=true]').getAttribute('data-topic'),
+        name,
+      );
+      assert((await page.locator('.rule-cards article').count()) >= 4);
     }
     assert.equal(await page.locator('.rule-cards article').count(), 8);
     await page.keyboard.press('Escape');
-    report.checks.push('four-step keyboard tour, persisted local toggle, contextual action hints and eight-topic rules; opening help and toggling mode preserve draft and send no game actions');
-    await page.setViewportSize({width:390,height:844}); await load('BLOCK');
+    report.checks.push(
+      'four-step keyboard tour, persisted local toggle, contextual action hints and eight-topic rules; opening help and toggling mode preserve draft and send no game actions',
+    );
+    await page.setViewportSize({ width: 390, height: 844 });
+    await load('BLOCK');
     assert.equal(await page.locator('#beginner-guide').getAttribute('data-mode'), 'tour');
     await page.locator('[data-guide-skip]').click();
     assert.match(await page.locator('#beginner-guide').innerText(), /藤缺什么/);
-    await page.locator('#beginner-guide').scrollIntoViewIfNeeded(); await screenshot('mobile-beginner-guide');
-    await page.locator('[data-space=plant]').click(); await pick('cards', demandingVine.id).click();
-    await page.locator('#vine-inspection').scrollIntoViewIfNeeded(); await screenshot('mobile-plant-conditions');
+    await page.locator('#beginner-guide').scrollIntoViewIfNeeded();
+    await screenshot('mobile-beginner-guide');
+    await page.locator('[data-space=plant]').click();
+    await pick('cards', demandingVine.id).click();
+    await page.locator('#vine-inspection').scrollIntoViewIfNeeded();
+    await screenshot('mobile-plant-conditions');
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-    await page.locator('#vine-inspection [data-rule-topic]').click(); await screenshot('mobile-rules');
+    await page.locator('#vine-inspection [data-rule-topic]').click();
+    await screenshot('mobile-rules');
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-    await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
-    await api('/api/action', {type:'place', space:'gain_coin', revision:1}, 'BLOCK');
-    await page.waitForFunction(() => document.querySelector('#beginner-guide')?.textContent.includes('等候你的回合'));
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await api('/api/action', { type: 'place', space: 'gain_coin', revision: 1 }, 'BLOCK');
+    await page.waitForFunction(() =>
+      document.querySelector('#beginner-guide')?.textContent.includes('等候你的回合'),
+    );
     assert.equal(await page.locator('#spaces .guide-target').count(), 0);
-    await load('GUIDEW'); await page.locator('[data-guide-skip]').click(); assert.match(await page.locator('#beginner-guide').innerText(), /先收获/);
-    await load('PAID'); await page.locator('[data-guide-skip]').click(); assert.match(await page.locator('#beginner-guide').innerText(), /经纪人 · 选择效果/);
-    const freshContext = await browser.newContext(); const freshPage = await freshContext.newPage(); await freshPage.goto(base);
-    assert.equal(await freshPage.locator('#welcome [data-guide-toggle]').getAttribute('aria-pressed'), 'false');
-    await freshPage.locator('#welcome [data-rules-open]').click(); assert(await freshPage.locator('#rules-help').isVisible());
+    await load('GUIDEW');
+    await page.locator('[data-guide-skip]').click();
+    assert.match(await page.locator('#beginner-guide').innerText(), /先收获/);
+    await load('PAID');
+    await page.locator('[data-guide-skip]').click();
+    assert.match(await page.locator('#beginner-guide').innerText(), /经纪人 · 选择效果/);
+    const freshContext = await browser.newContext();
+    const freshPage = await freshContext.newPage();
+    await freshPage.goto(base);
+    assert.equal(
+      await freshPage.locator('#welcome [data-guide-toggle]').getAttribute('aria-pressed'),
+      'false',
+    );
+    await freshPage.locator('#welcome [data-rules-open]').click();
+    assert(await freshPage.locator('#rules-help').isVisible());
     await freshPage.keyboard.press('Escape');
-    await freshPage.locator('#nickname').fill('新手入门检查');await freshPage.locator('#player-password').fill('test-password-123'); await freshPage.locator('#create-room').click();
-    await freshPage.locator('#code-label').waitFor({state:'visible'});
+    await freshPage.locator('#nickname').fill('新手入门检查');
+    await freshPage.locator('#player-password').fill('test-password-123');
+    await freshPage.locator('#create-room').click();
+    await freshPage.locator('#code-label').waitFor({ state: 'visible' });
     assert(await freshPage.locator('.table-nav [data-rules-open]').isVisible());
     await freshPage.locator('.table-nav [data-guide-toggle]').click();
     assert.match(await freshPage.locator('#beginner-guide').innerText(), /朋友落座/);
     await freshContext.close();
-    await page.locator('.table-nav [data-guide-toggle]').click(); await page.reload(); await page.locator('#code-label').waitFor({state:'visible'});
-    assert(await page.locator('#beginner-guide').isHidden()); assert.equal(await page.locator('.guide-target').count(), 0);
-    report.checks.push('mobile rules/inspection/guide fit 390px; advice follows SSE turn changes, winter and pending choices; preferences isolated between browsers and off persists');
-    const broken = await page.evaluate(() => [...document.images].filter((i) => i.complete && !i.naturalWidth).map((i) => i.src));
-    assert.deepEqual(broken, []); assert.deepEqual(report.errors, []); report.completed = true;
+    await page.locator('.table-nav [data-guide-toggle]').click();
+    await page.reload();
+    await page.locator('#code-label').waitFor({ state: 'visible' });
+    assert(await page.locator('#beginner-guide').isHidden());
+    assert.equal(await page.locator('.guide-target').count(), 0);
+    report.checks.push(
+      'mobile rules/inspection/guide fit 390px; advice follows SSE turn changes, winter and pending choices; preferences isolated between browsers and off persists',
+    );
+    const broken = await page.evaluate(() =>
+      [...document.images].filter((i) => i.complete && !i.naturalWidth).map((i) => i.src),
+    );
+    assert.deepEqual(broken, []);
+    assert.deepEqual(report.errors, []);
+    report.completed = true;
     console.log(JSON.stringify(report, null, 2));
-  } catch (e) { report.failure = e.stack; console.error(e); process.exitCode = 1; }
-  finally { if (browser) await browser.close(); await stop(); fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify(report, null, 2)); }
+  } catch (e) {
+    report.failure = e.stack;
+    console.error(e);
+    process.exitCode = 1;
+  } finally {
+    if (browser) await browser.close();
+    await stop();
+    fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify(report, null, 2));
+  }
 })();

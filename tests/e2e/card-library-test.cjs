@@ -54,6 +54,7 @@ const { ROOT, GO, temp, executable } = require('./runtime.cjs');
       const { cardText } = await import('/js/card-text.js');
       const { localCard } = await import('/js/card-i18n.js');
       const { boardActionArt, actionScenes } = await import('/js/action-art.js');
+      const { renderEstate } = await import('/js/graphics.js');
       const groups = await (await fetch('/api/cards')).json();
       const failures = [];
       const parse = (img) =>
@@ -78,6 +79,33 @@ const { ROOT, GO, temp, executable } = require('./runtime.cjs');
       for (const img of scenes) await img.decode();
       const source = '至少2白葡萄，获得3金币；不能 <img src=x onerror=alert(1)>';
       const rich = cardText(source);
+      const cellar = renderEstate(
+        {
+          players: [{ id: 'p', name: '测试庄主' }],
+          youId: 'p',
+          turnId: 'p',
+          hostId: 'p',
+          config: {},
+        },
+        {
+          id: 'p',
+          name: '测试庄主',
+          vp: 0,
+          coins: 0,
+          income: 0,
+          handCount: 0,
+          handCounts: {},
+          workers: 2,
+          totalWorkers: 2,
+          largeWorker: false,
+          buildings: [],
+          fields: [{ index: 0, capacity: 5, vines: [] }],
+          grapes: [],
+          wines: [],
+        },
+        {},
+        { red: '红', white: '白', blush: '桃红', sparkling: '起泡' },
+      );
       return {
         failures,
         sceneCount: new Set(scenes.map((i) => i.src)).size,
@@ -85,6 +113,10 @@ const { ROOT, GO, temp, executable } = require('./runtime.cjs');
         injected: rich.querySelectorAll('img').length,
         bold: [...rich.querySelectorAll('strong')].map((n) => n.textContent),
         numbers: [...rich.querySelectorAll('.card-number')].map((n) => n.textContent),
+        cellar: [...cellar.querySelectorAll('.quality-row')].map((row) =>
+          [...row.querySelectorAll('.quality-slot')].map((slot) => slot.getAttribute('aria-label')),
+        ),
+        cellarNote: cellar.querySelector('.cellar-note').textContent,
       };
     });
     assert.deepEqual(visuals.failures, []);
@@ -93,15 +125,28 @@ const { ROOT, GO, temp, executable } = require('./runtime.cjs');
     assert.equal(visuals.injected, 0);
     assert.ok(visuals.bold.includes('白葡萄') && visuals.bold.includes('不能'));
     assert.deepEqual(visuals.numbers, ['2', '3', '1']);
+    assert.match(visuals.cellar[4][0], /桃红酒最低品质为 4/);
+    assert.match(visuals.cellar[2][3], /缺少中酒窖/);
+    assert.match(visuals.cellar[2][6], /需先建中酒窖，再建大酒窖/);
+    assert.match(visuals.cellarNote, /中酒窖.*大酒窖/);
     await page.locator('#welcome [data-card-library]').click();
     await page.locator('.library-summary').filter({ hasText: '357' }).waitFor();
     assert.equal(await page.locator('.library-card').count(), 30);
+    const libraryNames = await page.locator('.library-card h3').allTextContents();
+    assert.equal(new Set(libraryNames).size, libraryNames.length);
     await page.getByRole('button', { name: '葡萄藤 42', exact: true }).click();
     assert.match(await page.locator('.library-summary').innerText(), /筛选结果 42/);
-    await page.getByRole('button', { name: '下一页', exact: true }).click();
-    assert.equal(await page.locator('.library-card').count(), 12);
+    assert.ok((await page.locator('.library-card').count()) < 30);
+    assert.ok((await page.locator('.card-quantity').count()) > 0);
     await page.getByRole('searchbox', { name: '搜索卡牌' }).fill('霞多丽');
-    assert.equal(await page.locator('.library-card').count(), 4);
+    assert.equal(await page.locator('.library-card').count(), 1);
+    assert.equal(await page.locator('.card-quantity').count(), 1);
+    assert.equal(await page.locator('.card-quantity').innerText(), '×4');
+    assert.ok(
+      await page
+        .locator('.card-quantity')
+        .evaluateAll((badges) => badges.every((b) => /^×\d+$/.test(b.textContent))),
+    );
     await page.keyboard.press('Escape');
     assert.ok(await page.locator('#card-library').isHidden());
     async function api(route, body, token) {

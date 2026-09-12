@@ -65,8 +65,22 @@ function render() {
           (s || '').toLowerCase().includes(query),
         )),
   );
-  summary.textContent = `${scope.value === 'current' && view ? '本局配置' : '全部已实现内容'}牌库总计 ${enabled.length} 张 · 筛选结果 ${matching.length} 张`;
-  message.textContent = '固定牌库构成，含同名副本；不表示当前剩余，也不显示任何玩家的持牌。';
+  const merged = [
+    ...matching
+      .reduce((cards, card) => {
+        // A deck can contain several identical copies. Keep module/type boundaries so
+        // similarly named cards from different expansions remain distinguishable.
+        const key = [card.group, card.type, card.name].join('\u0000');
+        const item = cards.get(key);
+        if (item) item.quantity++;
+        else cards.set(key, { ...card, quantity: 1 });
+        return cards;
+      }, new Map())
+      .values(),
+  ];
+  summary.textContent = `${scope.value === 'current' && view ? '本局配置' : '全部已实现内容'}牌库总计 ${enabled.length} 张 · 筛选结果 ${matching.length} 张（${merged.length} 种）`;
+  message.textContent =
+    '同名副本合并显示，右上角 × 数量表示该牌在固定牌库中的张数；不表示当前剩余，也不显示任何玩家的持牌。';
   filters.replaceChildren();
   for (const [key, label] of [['all', '全部'], ...Object.entries(types)]) {
     const count = enabled.filter(
@@ -86,15 +100,16 @@ function render() {
     };
     filters.append(b);
   }
-  page = Math.min(page, Math.max(0, Math.ceil(matching.length / pageSize) - 1));
+  page = Math.min(page, Math.max(0, Math.ceil(merged.length / pageSize) - 1));
   grid.replaceChildren();
-  for (const c of matching.slice(page * pageSize, (page + 1) * pageSize)) {
+  for (const c of merged.slice(page * pageSize, (page + 1) * pageSize)) {
     const article = node('article', null, 'library-card card ' + c.type);
     article.dataset.cardId = c.id;
     const img = cardArt(c, 'library-art');
     img.loading = 'lazy';
     article.append(
       img,
+      ...(c.quantity > 1 ? [node('span', '×' + c.quantity, 'card-quantity')] : []),
       node('small', c.groupName + ' · ' + (types[c.type] || c.type), 'library-source'),
       node('h3', c.name),
     );
@@ -105,7 +120,7 @@ function render() {
     if (c.requiresTuscany) article.append(node('small', '需要 Tuscany 主板', 'library-source'));
     grid.append(article);
   }
-  if (!matching.length) grid.append(node('p', '没有匹配的卡牌。'));
+  if (!merged.length) grid.append(node('p', '没有匹配的卡牌。'));
   pager.replaceChildren();
   for (const [delta, label] of [
     [-1, '上一页'],
@@ -113,7 +128,7 @@ function render() {
   ]) {
     const b = node('button', label);
     b.type = 'button';
-    b.disabled = delta < 0 ? page === 0 : (page + 1) * pageSize >= matching.length;
+    b.disabled = delta < 0 ? page === 0 : (page + 1) * pageSize >= merged.length;
     b.onclick = () => {
       page += delta;
       render();
@@ -121,7 +136,7 @@ function render() {
     };
     pager.append(b);
   }
-  pager.append(node('span', `${page + 1} / ${Math.max(1, Math.ceil(matching.length / pageSize))}`));
+  pager.append(node('span', `${page + 1} / ${Math.max(1, Math.ceil(merged.length / pageSize))}`));
 }
 async function open(button) {
   origin = button;
