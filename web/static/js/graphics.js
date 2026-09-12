@@ -1,4 +1,5 @@
-import { structureBuildings } from './building-catalog.js';
+import { baseBuildings, structureBuildings } from './building-catalog.js';
+import { hint } from './hints.js';
 // Original offline artwork; public state only.
 const node = (tag, text, cls) => {
   const n = document.createElement(tag);
@@ -245,6 +246,13 @@ export function renderEstate(v, p, buildings, types) {
       node('span', label.split(' · ')[0]),
       node('small', built ? '已建成' : label.split(' · ')[1] + ' · 未建'),
     );
+    const definition = [...baseBuildings, ...structureBuildings].find(([key]) => key === id);
+    if (definition) {
+      const [, name, cost, , effect] = definition;
+      n.tabIndex = 0;
+      n.setAttribute('aria-label', name + (built ? '，已建成' : '，未建造'));
+      hint(n, `${name} · 基础费用 ${cost} 金币\n${effect}\n${built ? '已建成' : '尚未建造'}`);
+    }
     structures.append(n);
   }
   content.append(
