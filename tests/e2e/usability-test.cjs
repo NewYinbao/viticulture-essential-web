@@ -79,7 +79,7 @@ async function api(url, body, token) {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.on('pageerror', (e) => report.errors.push(e.message));
     await page.goto(base);
-    async function load(code) { await page.evaluate((c) => localStorage.setItem('vineyard-ee-token', c), code); await page.reload(); await page.locator('#code-label').waitFor({ state: 'visible' }); }
+    async function load(code) { await page.evaluate((c) => sessionStorage.setItem('vineyard-ee-token', c), code); await page.reload(); await page.locator('#code-label').waitFor({ state: 'visible' }); }
     const pick = (group, value) => page.locator('#action-panel [data-group="' + group + '"][data-value="' + value + '"]');
     async function submit() { const response = page.waitForResponse((r) => r.url().endsWith('/api/action')); await page.locator('#confirm-action').click(); const res = await response; const v = await res.json(); assert.equal(res.status(), 200, JSON.stringify(v)); await page.locator('#action-panel').waitFor({state: 'detached'}); return v; }
     async function screenshot(name) { const dest = path.join(out, name + '.png'); await page.screenshot({ path: dest, fullPage: false }); report.screenshots.push(dest); }

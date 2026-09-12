@@ -71,7 +71,7 @@ async function stop() {
 async function load(page, token) {
   await page.goto(base, { waitUntil: "domcontentloaded" });
   await page.evaluate(
-    (value) => localStorage.setItem("vineyard-ee-token", value),
+    (value) => sessionStorage.setItem("vineyard-ee-token", value),
     token,
   );
   await page.reload({ waitUntil: "domcontentloaded" });

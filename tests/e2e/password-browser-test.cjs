@@ -34,7 +34,7 @@ async function stop() {
   server = null;
 }
 async function state(page) {
-  return page.evaluate(async () => (await fetch('/api/state', { headers: { Authorization: 'Bearer ' + localStorage.getItem('vineyard-ee-token') } })).json());
+  return page.evaluate(async () => (await fetch('/api/state', { headers: { Authorization: 'Bearer ' + sessionStorage.getItem('vineyard-ee-token') } })).json());
 }
 async function submit(page, url, selector, expected = 200) {
   const response = page.waitForResponse((r) => r.url().endsWith(url) && r.request().method() === 'POST');
@@ -87,14 +87,14 @@ async function shot(page, name) {
     assert(original.hand.length > 0 && original.passwordSet);
     await login(stranger, '山丘庄主', created.code, 'incorrect-password', 401);
     assert.equal(await stranger.locator('#game').isVisible(), false);
-    assert.equal(await stranger.evaluate(() => localStorage.getItem('vineyard-ee-token')), null);
+    assert.equal(await stranger.evaluate(() => sessionStorage.getItem('vineyard-ee-token')), null);
     assert.deepEqual(await state(host), original);
     checks.push('password required; same-name intruder rejected without seat mutation or private hand');
     await login(stranger, '山丘庄主', created.code, password);
     await stranger.locator('#game').waitFor({ state: 'visible' });
     await host.locator('#welcome').waitFor({ state: 'visible' });
     assert.equal(await host.locator('#hand .card').count(), 0);
-    assert.equal(await host.evaluate(() => localStorage.getItem('vineyard-ee-token')), null);
+    assert.equal(await host.evaluate(() => sessionStorage.getItem('vineyard-ee-token')), null);
     assert.deepEqual((await state(stranger)).hand, original.hand);
     assert.equal((await state(stranger)).youId, original.youId);
     checks.push('correct password resumes started game; old SSE browser locks and clears hand');
@@ -108,7 +108,7 @@ async function shot(page, name) {
     await submit(stranger, '/api/password', '#password-form button');
     await stranger.locator('#toast').filter({ hasText: '密码已保存' }).waitFor();
     assert.deepEqual((await state(stranger)).hand, original.hand);
-    const saved = await stranger.evaluate(() => ({ ...localStorage }));
+    const saved = await stranger.evaluate(() => ({ local: { ...localStorage }, tab: { ...sessionStorage } }));
     assert(!JSON.stringify(saved).includes('new-cellar-password'));
     assert.equal(await stranger.locator('#new-password').inputValue(), '');
     await submit(stranger, '/api/logout', '#lock-session');
@@ -157,7 +157,7 @@ async function shot(page, name) {
     await stranger.locator('#welcome').waitFor({ state: 'visible' });
     await login(stranger, '河谷庄主', created.code, 'guest-cellar-2026');
     await guest.locator('#welcome').waitFor({ state: 'visible' });
-    assert.equal(await guest.evaluate(() => localStorage.getItem('vineyard-ee-token')), null);
+    assert.equal(await guest.evaluate(() => sessionStorage.getItem('vineyard-ee-token')), null);
     checks.push('polling session revocation clears private UI and returns to login');
     assert.deepEqual(errors, []);
     console.log('PASS', checks);

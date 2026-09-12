@@ -18,7 +18,7 @@ export function renderPassword(v) {
   $('#enrollment-code-label').hidden = !!v.passwordSet;
   $('#enrollment-code').required = !v.passwordSet;
   $('#password-settings-note').textContent = v.passwordSet
-    ? '修改后，其他浏览器会退出此座位。'
+    ? '修改后，此座位在其他标签页或设备的登录会退出。'
     : '验证码仅显示在服务器本机窗口。设置密码后恢复对局。';
   $('#lock-session').disabled = !v.passwordSet;
   $('#lock-session').title = v.passwordSet

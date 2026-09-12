@@ -69,7 +69,7 @@ async function state(token = current.token) {
 }
 async function login(target, token) {
   await target.goto(base);
-  await target.evaluate((value) => localStorage.setItem('vineyard-ee-token', value), token);
+  await target.evaluate((value) => sessionStorage.setItem('vineyard-ee-token', value), token);
   await target.reload();
   await target.waitForFunction(
     (code) => document.querySelector('#code-label')?.textContent === '房间 ' + code,

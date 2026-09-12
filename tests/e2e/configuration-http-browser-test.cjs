@@ -226,7 +226,7 @@ async function run(config, index) {
   }
   await pages[0].locator('#create-room').click();
   await pages[0].locator('#code-label').waitFor();
-  const hostToken = await pages[0].evaluate(() => localStorage.getItem('vineyard-ee-token'));
+  const hostToken = await pages[0].evaluate(() => sessionStorage.getItem('vineyard-ee-token'));
   const initial = await state(hostToken);
   if (index === 0) pureRoom = { code: initial.code, name: '配置验收0-1' };
   await pages[1].locator('#room-code').fill(initial.code);
@@ -234,7 +234,7 @@ async function run(config, index) {
   await pages[1].locator('#code-label').waitFor();
   const tokens = [
     hostToken,
-    await pages[1].evaluate(() => localStorage.getItem('vineyard-ee-token')),
+    await pages[1].evaluate(() => sessionStorage.getItem('vineyard-ee-token')),
   ];
   for (const page of pages) {
     await page.locator('#game [data-guide-toggle]').click();

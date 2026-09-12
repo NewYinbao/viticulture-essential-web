@@ -11,8 +11,8 @@ async function start(port=0){
  child=spawn(process.env.VITICULTURE_REVIEW_EXE || path.join(repo,'dist/Viticulture-Expansions.exe'),['-addr','127.0.0.1:'+port,'-data',data],{windowsHide:true,cwd:root});
  base=await new Promise((resolve,reject)=>{let log='';const timeout=setTimeout(()=>reject(Error('startup timeout '+log)),15000);child.once('error',reject);child.stdout.on('data',b=>{log+=b;const m=log.match(/http:\/\/127\.0\.0\.1:(\d+)/);if(m){clearTimeout(timeout);resolve('http://127.0.0.1:'+m[1]);}});child.stderr.on('data',b=>log+=b);});
 }
-async function state(){return page.evaluate(async()=>{const r=await fetch('/api/state',{headers:{Authorization:'Bearer '+localStorage.getItem('vineyard-ee-token')}});return r.json()})}
-async function load(code){await page.goto(base);await page.evaluate(t=>localStorage.setItem('vineyard-ee-token',t),code);await page.reload();await page.waitForFunction(code=>document.querySelector('#code-label')?.textContent==='房间 '+code,code);}
+async function state(){return page.evaluate(async()=>{const r=await fetch('/api/state',{headers:{Authorization:'Bearer '+sessionStorage.getItem('vineyard-ee-token')}});return r.json()})}
+async function load(code){await page.goto(base);await page.evaluate(t=>sessionStorage.setItem('vineyard-ee-token',t),code);await page.reload();await page.waitForFunction(code=>document.querySelector('#code-label')?.textContent==='房间 '+code,code);}
 async function open(id){await page.locator('[data-space="'+id+'"]').click();await page.locator('#action-panel').waitFor()}
 async function select(group,value){await page.locator('[data-group="'+group+'"][data-value="'+value+'"]').click()}
 async function confirm(){const response=page.waitForResponse(r=>r.url().endsWith('/api/action')&&r.request().method()==='POST');await page.locator('#confirm-action').click();const r=await response;assert.equal(r.status(),200,await r.text());await page.waitForFunction(()=>!document.querySelector('#action-panel'));}

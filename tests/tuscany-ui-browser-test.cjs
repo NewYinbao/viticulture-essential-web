@@ -63,13 +63,13 @@ async function state(page) {
   return page.evaluate(async () =>
     (
       await fetch('/api/state', {
-        headers: { Authorization: 'Bearer ' + localStorage.getItem('vineyard-ee-token') },
+        headers: { Authorization: 'Bearer ' + sessionStorage.getItem('vineyard-ee-token') },
       })
     ).json(),
   );
 }
 async function load(page, code, seat = 0) {
-  await page.evaluate((token) => localStorage.setItem('vineyard-ee-token', token), code + seat);
+  await page.evaluate((token) => sessionStorage.setItem('vineyard-ee-token', token), code + seat);
   await page.reload();
   await page.waitForFunction(
     (code) =>
@@ -128,7 +128,7 @@ async function choose(page, selector) {
 async function waitChoice(page, kind) {
   await page.waitForFunction(async (kind) => {
     const r = await fetch('/api/state', {
-      headers: { Authorization: 'Bearer ' + localStorage.getItem('vineyard-ee-token') },
+      headers: { Authorization: 'Bearer ' + sessionStorage.getItem('vineyard-ee-token') },
     });
     return (await r.json()).pendingChoice?.kind === kind;
   }, kind);

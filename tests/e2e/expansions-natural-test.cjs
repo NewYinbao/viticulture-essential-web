@@ -283,7 +283,7 @@ async function runGame(config, index) {
       game.browserErrors.push(error.message);
     });
     await pages[i].goto(base);
-    await pages[i].evaluate((token) => localStorage.setItem('vineyard-ee-token', token), tokens[i]);
+    await pages[i].evaluate((token) => sessionStorage.setItem('vineyard-ee-token', token), tokens[i]);
     await pages[i].reload();
     await pages[i].locator('#code-label').waitFor();
   }

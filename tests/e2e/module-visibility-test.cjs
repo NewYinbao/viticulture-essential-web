@@ -272,7 +272,7 @@ const check = (actual, expected, message, detail) => {
     async function load(code) {
       await page.goto(base);
       await page.evaluate((code) => {
-        localStorage.setItem("vineyard-ee-token", code);
+        sessionStorage.setItem("vineyard-ee-token", code);
         localStorage.setItem("vineyard-ee-guide", "on");
         localStorage.setItem("vineyard-ee-tour-step", "0");
         localStorage.removeItem("vineyard-ee-tour:" + code + ":p");

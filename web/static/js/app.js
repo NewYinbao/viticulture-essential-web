@@ -1,3 +1,4 @@
+import { migrateTabSession } from './tab-session.js';
 import { vineDescription } from './vine-art.js';
 import { renderTuscanyBoard } from './tuscany-board.js';
 import { pollState } from './polling.js';
@@ -52,7 +53,8 @@ const phases = {
   winter: '冬季 · 酿酒坊',
   finished: '收官 · 年度佳酿',
 };
-let token = localStorage.getItem('vineyard-ee-token') || '',
+migrateTabSession();
+let token = sessionStorage.getItem('vineyard-ee-token') || '',
   state = null,
   source = null,
   busy = false,
@@ -121,6 +123,8 @@ function render(v) {
     (v.phase === 'lobby' ? '' : `第 ${v.year} 年 · `) +
     (v.config?.board === 'tuscany' && v.phase === 'fall' ? '秋季 · 收获与酿酒' : phases[v.phase]);
   $('#code-label').textContent = '房间 ' + v.code;
+  $('#account-label').textContent =
+    '当前账号：' + (v.players.find((p) => p.id === v.youId)?.name || '');
   $('#turn-label').textContent =
     v.phase === 'finished'
       ? '最高排名：' + playerName(v.winnerId)
@@ -446,9 +450,12 @@ async function enter(create) {
       create ? { name, password } : { name, code, password },
     );
     token = r.token;
-    localStorage.setItem('vineyard-ee-token', token);
-    localStorage.setItem('vineyard-ee-name', name);
+    sessionStorage.setItem('vineyard-ee-token', token);
+    sessionStorage.setItem('vineyard-ee-name', name);
     $('#player-password').value = '';
+    const url = new URL(location.href);
+    url.searchParams.delete('room');
+    history.replaceState(null, '', url);
     await connect();
   } catch (e) {
     toast(e.message);
@@ -505,7 +512,7 @@ $('#pass').onclick = () => {
 $('#switch-table').onclick = () => {
   if (busy) return;
   if (
-    !confirm('返回入口不会退出座位。原会话仍可刷新恢复；加入新房间会替换本浏览器保存的会话。继续？')
+    !confirm('返回入口不会退出座位。原会话仍可刷新恢复；加入新房间会替换本标签页保存的会话。继续？')
   )
     return;
   source?.close();
@@ -526,7 +533,7 @@ function sessionEnded() {
   token = '';
   state = null;
   online = false;
-  localStorage.removeItem('vineyard-ee-token');
+  sessionStorage.removeItem('vineyard-ee-token');
   closeActionPanel({ restoreFocus: false });
   clearPassword();
   for (const selector of ['#hand', '#players', '#log', '#ee-choice'])
@@ -588,7 +595,7 @@ initPassword(
     try {
       const result = await api(path, body);
       token = result.token;
-      localStorage.setItem('vineyard-ee-token', token);
+      sessionStorage.setItem('vineyard-ee-token', token);
       return result;
     } finally {
       await connect();
@@ -612,7 +619,17 @@ function openAction(s) {
 }
 $('#resume-room').hidden = !token;
 $('#resume-room').onclick = () => connect();
-$('#nickname').value = localStorage.getItem('vineyard-ee-name') || '';
+$('#nickname').value = sessionStorage.getItem('vineyard-ee-name') || '';
 const invitation = new URL(location.href).searchParams.get('room');
 if (invitation) $('#room-code').value = invitation.toUpperCase();
 if (token && !invitation) connect();
+
+for (const button of document.querySelectorAll('[data-open-account]')) {
+  button.onclick = () => {
+    const url = new URL(location.href);
+    const room = state?.code || $('#room-code').value.trim();
+    if (room) url.searchParams.set('room', room);
+    // noopener avoids copying this tab's sessionStorage into the new tab.
+    window.open(url.href, '_blank', 'noopener');
+  };
+}

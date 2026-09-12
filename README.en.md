@@ -40,7 +40,7 @@ go build -trimpath -o viticulture ./cmd/viticulture
 
 ### Play with friends
 
-The host creates a room with a name and seat password. Friends on the same LAN open `http://HOST_IP:3015` and join using the room code and their own names and passwords. The host selects expansions before starting; no separate launcher is needed.
+The host creates a room with a name and seat password. Friends on the same LAN open `http://HOST_IP:3015` and join using the room code and their own names and passwords. The host selects expansions before starting; no separate launcher is needed. Use “另开账号” (Open another account) to sign in separately in another tab of the same browser. Refresh preserves that tab’s login; use your name and password to recover your seat after closing and reopening.
 
 The download package stores saves in its `data` folder. Close the launch window to stop the server; stop the previous version and back up that folder before upgrading. Returning to an existing seat requires its original name and password.
 

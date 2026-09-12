@@ -65,7 +65,7 @@ async function stop() {
 async function state(page) {
   return page.evaluate(async () => {
     const response = await fetch('/api/state', {
-      headers: { Authorization: 'Bearer ' + localStorage.getItem('vineyard-ee-token') },
+      headers: { Authorization: 'Bearer ' + sessionStorage.getItem('vineyard-ee-token') },
     });
     return response.json();
   });
@@ -76,7 +76,7 @@ async function action(page, body) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + localStorage.getItem('vineyard-ee-token'),
+        Authorization: 'Bearer ' + sessionStorage.getItem('vineyard-ee-token'),
       },
       body: JSON.stringify(body),
     });
@@ -148,7 +148,7 @@ async function shot(page, name) {
     await host.locator('#save-expansion-config').click();
     await host.waitForFunction(async (revision) => {
       const response = await fetch('/api/state', {
-        headers: { Authorization: 'Bearer ' + localStorage.getItem('vineyard-ee-token') },
+        headers: { Authorization: 'Bearer ' + sessionStorage.getItem('vineyard-ee-token') },
       });
       return (await response.json()).revision > revision;
     }, before.revision);
@@ -168,7 +168,7 @@ async function shot(page, name) {
     await host.locator('#save-expansion-config').click();
     await host.waitForFunction(async (revision) => {
       const response = await fetch('/api/state', {
-        headers: { Authorization: 'Bearer ' + localStorage.getItem('vineyard-ee-token') },
+        headers: { Authorization: 'Bearer ' + sessionStorage.getItem('vineyard-ee-token') },
       });
       return (await response.json()).revision > revision;
     }, configured.revision);
@@ -308,7 +308,7 @@ async function shot(page, name) {
       await builderPage.reload();
       await builderPage.waitForFunction(async (id) => {
         const response = await fetch('/api/state', {
-          headers: { Authorization: 'Bearer ' + localStorage.getItem('vineyard-ee-token') },
+          headers: { Authorization: 'Bearer ' + sessionStorage.getItem('vineyard-ee-token') },
         });
         const v = await response.json();
         return v.youId === id && v.turnId === id && v.legal?.canPlace;

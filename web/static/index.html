@@ -49,7 +49,8 @@
             ><button type="button" data-guide-toggle aria-pressed="false">新手引导</button>
           </div>
           <p id="welcome-guide" class="welcome-guide" hidden></p>
-          <p class="muted">一人创建房间，其他玩家输入房间码加入。</p>
+          <p class="muted">一人创建房间，其他玩家输入房间码加入。每个标签页可登录不同账号。</p>
+          <button type="button" data-open-account>另开账号</button>
           <label
             >你的昵称<input
               id="nickname"
@@ -96,8 +97,11 @@
             <p id="turn-label"></p>
           </div>
           <div class="table-controls">
-            <span id="code-label" class="badge"></span><button id="invite">复制邀请链接</button
-            ><button id="switch-table">返回入口</button><button id="lock-session">锁定退出</button>
+            <span id="account-label" class="badge"></span>
+            <span id="code-label" class="badge"></span>
+            <button type="button" data-open-account>另开账号</button
+            ><button id="invite">复制邀请链接</button><button id="switch-table">返回入口</button
+            ><button id="lock-session">锁定退出</button>
           </div>
         </div>
         <nav class="table-nav" aria-label="桌面快速导航">

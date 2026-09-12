@@ -53,7 +53,7 @@ async function stop() {
 }
 async function open(token) {
   await page.goto(base);
-  await page.evaluate((token) => localStorage.setItem('vineyard-ee-token', token), token);
+  await page.evaluate((token) => sessionStorage.setItem('vineyard-ee-token', token), token);
   await page.reload();
   await page.locator('[data-visitor-submit]').waitFor();
 }

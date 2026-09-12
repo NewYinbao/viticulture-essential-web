@@ -31,7 +31,7 @@ let child, browser, page;
 async function state() {
   return page.evaluate(async () => {
     const response = await fetch('/api/state', {
-      headers: { Authorization: 'Bearer ' + localStorage.getItem('vineyard-ee-token') },
+      headers: { Authorization: 'Bearer ' + sessionStorage.getItem('vineyard-ee-token') },
     });
     if (!response.ok) throw Error(await response.text());
     return response.json();
@@ -68,7 +68,7 @@ async function state() {
     page.on('pageerror', (error) => result.errors.push(error.message));
     for (const test of bundle.cases) {
       await page.goto(base);
-      await page.evaluate((token) => localStorage.setItem('vineyard-ee-token', token), test.token);
+      await page.evaluate((token) => sessionStorage.setItem('vineyard-ee-token', token), test.token);
       await page.reload();
       await page.waitForFunction(
         (code) => document.querySelector('#code-label')?.textContent === '房间 ' + code,
