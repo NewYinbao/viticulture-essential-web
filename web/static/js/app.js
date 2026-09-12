@@ -99,6 +99,7 @@ function playerName(id) {
   return state.players.find((p) => p.id === id)?.name || '—';
 }
 function render(v) {
+  if ($('#pass-confirm').open && state && v.revision !== state.revision) $('#pass-confirm').close();
   updateCardLibrary(v);
   if (state && state.code === v.code && v.revision < state.revision) return;
   if (state && v.revision !== state.revision && !busy) {
@@ -504,15 +505,13 @@ $('#pass').onclick = () => {
     state.config?.board === 'tuscany'
       ? { spring: '夏季', summer: '秋季', fall: '冬季' }[state.phase]
       : '冬季';
-  if (
-    confirm(
-      state.phase === 'winter'
-        ? '确定结束冬季？本年不再派遣工人，进入年末结算。'
-        : `确定结束${season}？剩余待命工人保留到${nextSeason}。`,
-    )
-  )
-    act({ type: 'pass' });
+  $('#pass-confirm-message').textContent =
+    state.phase === 'winter'
+      ? '本年不再派遣工人，随后进入年末结算。'
+      : `剩余待命工人会保留到${nextSeason}。`;
+  $('#pass-confirm').showModal();
 };
+$('#pass-confirm-submit').onclick = () => act({ type: 'pass' });
 $('#switch-table').onclick = () => {
   if (busy) return;
   if (

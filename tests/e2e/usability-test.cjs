@@ -253,6 +253,18 @@ async function api(url, body, token) {
     assert.match(await page.locator('[data-space=gain_coin] .slots').innerText(), /不限人数/);
     assert.match(await page.locator('[data-space=yoke]').getAttribute('data-hint'), /轭/);
     assert(await page.locator('[data-space=yoke]').isDisabled());
+    await page.locator('#pass').click();
+    const passDialog = page.locator('#pass-confirm');
+    await passDialog.waitFor({ state: 'visible' });
+    assert.match(await passDialog.innerText(), /结束本季[\s\S]*剩余待命工人/);
+    assert.equal(await page.locator('dialog:modal').count(), 1);
+    const dialogBox = await passDialog.boundingBox();
+    assert(
+      Math.abs(dialogBox.x + dialogBox.width / 2 - (await page.evaluate(() => innerWidth / 2))) <
+        12,
+    );
+    await page.keyboard.press('Escape');
+    assert(await passDialog.isHidden());
     const opponent = page.locator('.player').nth(1);
     assert.match(await opponent.locator('.public-hand-counts').innerText(), /葡萄藤 2/);
     report.checks.push('slot indices, unlimited coin, private yoke and public hand counts');
@@ -335,7 +347,6 @@ async function api(url, body, token) {
     report.checks.push('return-to-entry preserves explicit resume path');
     await page.setViewportSize({ width: 1440, height: 1000 });
     await load('BUILD');
-    await page.locator('[data-space=build]').scrollIntoViewIfNeeded();
     const boardBefore = await page.locator('#board').boundingBox();
     await page.locator('[data-space=build]').click();
     const boardAfter = await page.locator('#board').boundingBox();

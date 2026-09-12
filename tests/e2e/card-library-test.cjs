@@ -168,11 +168,12 @@ const { ROOT, GO, temp, executable } = require('./runtime.cjs');
     await page.evaluate((token) => sessionStorage.setItem('vineyard-ee-token', token), owner.token);
     await page.reload();
     await page.locator('#game').waitFor({ state: 'visible' });
+    await page.waitForTimeout(400);
     const before = await api('/api/state', null, owner.token);
-    const building = page.locator('.player.you .structure').first();
-    await building.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
-    await building.hover();
+    const building = page.locator('.player.you .structure[data-hint]').first();
+    await building.evaluate((element) =>
+      element.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })),
+    );
     await page.screenshot({ path: path.join(ROOT, 'artifacts/card-features/estate-hint.png') });
     await page.locator('#context-hint:visible').waitFor();
     assert.match(await page.locator('#context-hint').innerText(), /基础费用.*金币/);

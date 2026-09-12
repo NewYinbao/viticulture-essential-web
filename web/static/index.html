@@ -220,6 +220,16 @@
         模式，并仅向可信朋友分享链接与口令。规则与原版差异见上方说明。
       </footer>
     </main>
+    <dialog id="pass-confirm" class="pass-confirm" aria-labelledby="pass-confirm-title">
+      <form method="dialog">
+        <h2 id="pass-confirm-title">结束本季？</h2>
+        <p id="pass-confirm-message"></p>
+        <div class="pass-confirm-actions">
+          <button value="cancel">继续行动</button>
+          <button id="pass-confirm-submit" class="primary" value="confirm">确认结束本季</button>
+        </div>
+      </form>
+    </dialog>
     <div id="toast" role="status" hidden></div>
   </body>
 </html>
