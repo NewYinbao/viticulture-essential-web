@@ -147,7 +147,13 @@ async function api(url, body, token) {
     assert.match(await page.locator('#code-label').innerText(), /STALE/);
     report.checks.push('return-to-entry preserves explicit resume path');
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await load('BUILD'); await page.locator('[data-space=build]').click();
+    await load('BUILD');
+    await page.locator('[data-space=build]').scrollIntoViewIfNeeded();
+    const boardBefore = await page.locator('#board').boundingBox();
+    await page.locator('[data-space=build]').click();
+    const boardAfter = await page.locator('#board').boundingBox();
+    assert.equal(boardAfter.height, boardBefore.height);
+    assert.equal(boardAfter.width, boardBefore.width);
     assert.equal(await page.locator('#action-panel .building-choice').count(), 8);
     assert.equal(await page.locator('#action-panel select, dialog:modal').count(), 0);
     assert.equal(await pick('building', 'trellis').getAttribute('aria-disabled'), 'true');
@@ -166,7 +172,10 @@ async function api(url, body, token) {
     assert(panelBox.x + panelBox.width < estateBox.x);
     assert(await page.locator('#players .stats').first().isVisible());
     assert.equal(await page.locator('#estate-panel').evaluate((e) => getComputedStyle(e).filter), 'none');
-    assert.equal(await page.locator('[inert]').count(), 0);
+    assert.equal(await page.locator('#estate-panel [inert]').count(), 0);
+    assert(await page.locator('#spaces').evaluate(e => e.inert));
+    assert(await page.locator('.board-panorama').isVisible());
+    assert.equal(await page.locator('#action-panel').getAttribute('role'), 'dialog');
     await page.locator('#estate-panel .player details').first().locator('summary').click();
     assert.equal(await pick('building', 'medium_cellar').getAttribute('aria-pressed'), 'true');
     await pick('building', 'medium_cellar').focus();
@@ -277,7 +286,7 @@ async function api(url, body, token) {
     assert.equal(await page.locator('.rule-topics [aria-pressed=true]').getAttribute('data-topic'), 'planting');
     assert.equal(await page.locator('.rule-topics button').count(), 8);
     assert.equal(await page.locator('#rules-help .rule-cards article').count(), 4);
-    assert.equal(await page.locator('dialog:modal, [inert]').count(), 0);
+    assert.equal(await page.locator('dialog:modal, #rules-help [inert], #estate-panel [inert]').count(), 0);
     await screenshot('desktop-rules');
     await page.keyboard.press('Escape'); assert(await page.locator('#rules-help').isHidden());
     assert(await page.locator('#action-panel').isVisible());

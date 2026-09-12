@@ -42,12 +42,15 @@ let active;
 export const hasActionPanel = () => !!active;
 export function closeActionPanel({ restoreFocus = true } = {}) {
   if (!active) return;
-  const { panel, host, source, trigger } = active;
+  const { panel, host, source, trigger, backdrop, positionPanel } = active;
   active = null;
   panel.remove();
+  backdrop.remove();
+  window.removeEventListener('resize', positionPanel);
+  source.inert = false;
   host.classList.remove('editing-action');
   source.hidden = false;
-  document.querySelector('#pass').hidden = false;
+  document.querySelector('#pass').inert = false;
   document.querySelector('.table-nav a').href = '#action-area';
   document.dispatchEvent(new Event('action-panel-close'));
   document.dispatchEvent(new CustomEvent('action-panel-state', { detail: null }));
@@ -60,7 +63,7 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-// A local, non-modal workspace. The estate and hand stay interactive.
+// A board-scoped dialog. The estate and hand stay interactive.
 export function openActionPanel(space, view, act, options = {}) {
   const allowedCardIDs = options.allowedCardIDs;
   const continuation = !!options.continuation;
@@ -71,6 +74,16 @@ export function openActionPanel(space, view, act, options = {}) {
   const source = document.querySelector(wake ? '#wake-options' : '#spaces');
   const panel = node('section', null, 'action-panel');
   panel.id = 'action-panel';
+  panel.setAttribute('role', 'dialog');
+  const backdrop = node('div', null, 'action-backdrop');
+  backdrop.setAttribute('aria-hidden', 'true');
+  const positionPanel = () => {
+    const bounds = host.getBoundingClientRect();
+    const top = Math.min(Math.max(12, 78 - bounds.top), Math.max(12, bounds.height - 300));
+    panel.style.top = top + 'px';
+    panel.style.maxHeight =
+      Math.max(240, Math.min(800, innerHeight - 100, bounds.height - top - 12)) + 'px';
+  };
   panel.setAttribute('aria-labelledby', 'action-panel-title');
   const session = {
     panel,
@@ -78,15 +91,18 @@ export function openActionPanel(space, view, act, options = {}) {
     source,
     trigger: wake ? '#wake-options [data-slot="5"]' : '[data-space="' + space.id + '"]',
     sending: false,
+    backdrop,
+    positionPanel,
   };
   active = session;
   host.classList.add('editing-action');
-  source.hidden = true;
-  document.querySelector('#pass').hidden = true;
-  host.append(panel);
+  source.inert = true;
+  document.querySelector('#pass').inert = true;
+  host.append(backdrop, panel);
+  window.addEventListener('resize', positionPanel);
   document.querySelector('.table-nav a').href = '#action-panel';
   const head = node('div', null, 'action-panel-head');
-  const back = node('button', '← 返回棋盘', 'action-back');
+  const back = node('button', '关闭 ×', 'action-back');
   back.type = 'button';
   back.onclick = () => closeActionPanel();
   const title = node('h3', wake ? '选择起床奖励' : space.name);
@@ -1321,5 +1337,8 @@ export function openActionPanel(space, view, act, options = {}) {
   };
   redraw();
   title.focus({ preventScroll: true });
-  panel.scrollIntoView({ block: 'start' });
+  const bounds = host.getBoundingClientRect();
+  if (bounds.bottom < 120 || bounds.top > innerHeight - 120)
+    host.scrollIntoView({ block: 'start' });
+  positionPanel();
 }
