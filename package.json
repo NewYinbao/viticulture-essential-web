@@ -12,7 +12,11 @@
     "test:game": "node tests/e2e/natural-full-game-test.cjs",
     "test:discard": "node tests/e2e/discard-browser-test.cjs",
     "test:units": "node tests/expansions-help-unit-test.cjs && node tests/expansions-catalogue-unit-test.cjs && node tests/tuscany-ui-unit-test.cjs && node tests/polling-unit-test.cjs",
-    "test:expansions": "node tests/expansions-full-browser-test.cjs"
+    "test:expansions": "node tests/expansions-full-browser-test.cjs",
+    "test:card-art": "node tests/e2e/vine-art-test.cjs"
   },
-  "devDependencies": { "playwright": "1.63.0", "prettier": "3.9.6" }
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "prettier": "3.9.6"
+  }
 }

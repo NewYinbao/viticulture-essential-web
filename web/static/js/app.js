@@ -1,3 +1,4 @@
+import { vineDescription } from './vine-art.js';
 import { renderTuscanyBoard } from './tuscany-board.js';
 import { pollState } from './polling.js';
 import { initPassword, renderPassword, clearPassword } from './password-ui.js';
@@ -302,9 +303,8 @@ function render(v) {
       el('span', types[c.type] || c.type, 'type'),
       el('h4', c.name),
       el('small', c.englishName, 'card-english'),
-      el('p', c.description),
+      c.type === 'vine' ? vineDescription(c.description) : el('p', c.description),
     );
-    if (c.type === 'vine') e.append(el('b', `红 ${c.red} · 白 ${c.white}`));
     if (c.type === 'order')
       e.append(
         el('b', (c.requirements || []).map((w) => `${types[w.type]}酒 ≥ ${w.value}`).join(' + ')),

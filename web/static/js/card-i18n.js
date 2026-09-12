@@ -984,7 +984,18 @@ const catalogue = {
 };
 Object.assign(catalogue, rhineCards);
 export function localCard(c) {
-  return { ...c, ...(catalogue[c.id] || {}) };
+  const card = { ...c, ...(catalogue[c.id] || {}) };
+  if (card.type === 'vine') {
+    const cleanName = (name) =>
+      (name || '')
+        .replace(/\s*\((?:\d+[RW]\s*)+\)/gi, '')
+        .replace(/\s*#\d+\s*$/, '')
+        .replace(/\s+\d+\s*$/, '')
+        .trim();
+    card.name = cleanName(card.name);
+    card.englishName = cleanName(card.englishName);
+  }
+  return card;
 }
 export function cardInfo(id) {
   return catalogue[id];

@@ -1,0 +1,15 @@
+/* Keep the full composition and yield circles visible in hand and action cards. */
+.card .card-art.vine-art,
+.action-choice.hand-choice .choice-art.vine-art {
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+}
+.vine-description strong {
+  font-weight: 750;
+}
+.vine-description .vine-quantity {
+  color: #a34813;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
