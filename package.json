@@ -14,7 +14,8 @@
     "test:units": "node tests/expansions-help-unit-test.cjs && node tests/expansions-catalogue-unit-test.cjs && node tests/tuscany-ui-unit-test.cjs && node tests/polling-unit-test.cjs",
     "test:expansions": "node tests/expansions-full-browser-test.cjs",
     "test:card-art": "node tests/e2e/vine-art-test.cjs",
-    "test:multi-account": "node tests/e2e/multi-account-test.cjs"
+    "test:multi-account": "node tests/e2e/multi-account-test.cjs",
+    "test:card-library": "node tests/e2e/card-library-test.cjs"
   },
   "devDependencies": {
     "playwright": "1.63.0",

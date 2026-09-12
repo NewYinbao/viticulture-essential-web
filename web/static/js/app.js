@@ -1,3 +1,4 @@
+import { initCardLibrary, updateCardLibrary } from './card-library.js';
 import { boardActionArt } from './action-art.js';
 import { migrateTabSession } from './tab-session.js';
 import { vineDescription } from './vine-art.js';
@@ -16,6 +17,7 @@ import { art, worker, decorateTable, renderEstate } from './graphics.js';
 const $ = (s) => document.querySelector(s);
 installHints();
 initHelp();
+initCardLibrary();
 const el = (tag, text, cls) => {
   const e = document.createElement(tag);
   if (text != null) e.textContent = text;
@@ -97,6 +99,7 @@ function playerName(id) {
   return state.players.find((p) => p.id === id)?.name || '—';
 }
 function render(v) {
+  updateCardLibrary(v);
   if (state && state.code === v.code && v.revision < state.revision) return;
   if (state && v.revision !== state.revision && !busy) {
     if (hasActionPanel()) {
@@ -525,6 +528,7 @@ $('#switch-table').onclick = () => {
   $('#game').hidden = true;
   setConnection('已返回入口');
   renderHelp(null, false);
+  updateCardLibrary(null);
   clearPassword();
 };
 function sessionEnded() {
@@ -545,6 +549,7 @@ function sessionEnded() {
   $('#game').insertBefore($('#password-settings'), $('#action-area'));
   $('#welcome').hidden = false;
   renderHelp(null, false);
+  updateCardLibrary(null);
   setConnection('已锁定 · 请用昵称和密码登录');
 }
 function showEnrollment(info) {
@@ -554,6 +559,7 @@ function showEnrollment(info) {
   online = false;
   closeActionPanel({ restoreFocus: false });
   renderHelp(null, false);
+  updateCardLibrary(null);
   for (const selector of ['#hand', '#players', '#log', '#ee-choice'])
     $(selector)?.replaceChildren();
   $('#game').hidden = true;

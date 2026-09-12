@@ -1,0 +1,114 @@
+.card-library {
+  width: min(1060px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 20px;
+  border: 1px solid #a78b5f;
+  border-radius: 12px;
+  background: #faf3df;
+  color: #3f3829;
+  overflow: auto;
+}
+.card-library::backdrop {
+  background: #30271980;
+}
+.card-library .library-heading {
+  position: static;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  padding: 0;
+  box-shadow: none;
+  border: 0;
+  gap: 16px;
+}
+.library-heading h2 {
+  margin: 0;
+}
+.library-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.library-controls input {
+  flex: 1;
+  min-width: 160px;
+}
+.library-controls select {
+  width: auto;
+  max-width: 100%;
+}
+.library-summary {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.library-note,
+.library-source {
+  font-size: 12px;
+  color: #71644f;
+}
+.library-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+.library-filters [aria-pressed='true'] {
+  background: #456443;
+  color: white;
+}
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+.library-card.card {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+.library-art {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3/2;
+  object-fit: contain;
+  border-radius: 5px;
+}
+.library-card h3 {
+  font-size: 15px;
+  margin: 8px 0;
+}
+.library-card p {
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.library-card small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.library-pager {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+}
+@media (max-width: 480px) {
+  .card-library {
+    padding: 12px;
+  }
+  .library-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .library-card.card {
+    padding: 8px;
+  }
+  .library-controls input {
+    flex-basis: 100%;
+  }
+}

@@ -60,6 +60,9 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		reply(w, 200, map[string]any{"ok": true, "version": "ee-rules-fix"})
 	})
+	mux.HandleFunc("GET /api/cards", func(w http.ResponseWriter, r *http.Request) {
+		reply(w, 200, game.CardLibrary())
+	})
 	mux.HandleFunc("POST /api/create", a.enter)
 	mux.HandleFunc("POST /api/join", a.enter)
 	mux.HandleFunc("POST /api/password", a.password)
