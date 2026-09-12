@@ -65,6 +65,7 @@
 }
 .library-card.card {
   width: auto;
+  min-width: 0;
   max-width: none;
   margin: 0;
   padding: 12px;
@@ -111,4 +112,26 @@
   .library-controls input {
     flex-basis: 100%;
   }
+}
+
+.card-description strong {
+  font-weight: 750;
+}
+.card-description .card-number {
+  color: #a34813;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+#context-hint .card-number {
+  color: #ffe09d;
+}
+#context-hint .card-description {
+  font-size: inherit;
+}
+
+.card-art.illustrated-art,
+.choice-art.illustrated-art,
+.building-art.illustrated-art,
+.ee-parent-card img.illustrated-art {
+  object-fit: contain;
 }

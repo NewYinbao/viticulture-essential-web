@@ -1,3 +1,4 @@
+import { cardText } from './card-text.js';
 import { renderMoorField, cardMatchesSeason } from './moor-ui.js';
 import { renderRhineField } from './rhine-ui.js';
 import { bonusKey, bonusLabel, bonusNames } from './action-options.js';
@@ -392,9 +393,9 @@ export function renderVisitor(box, v, act, online) {
   if (info)
     details.append(
       node('small', info.englishName, 'card-english'),
-      node('p', info.description, 'visitor-rules'),
+      cardText(info.description, 'p', 'visitor-rules'),
     );
-  if (c.description) details.append(node('p', c.description, 'visitor-rules'));
+  if (c.description) details.append(cardText(c.description, 'p', 'visitor-rules'));
   box.append(details);
   box.append(
     node(

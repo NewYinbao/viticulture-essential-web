@@ -1,7 +1,7 @@
 import { initCardLibrary, updateCardLibrary } from './card-library.js';
 import { boardActionArt } from './action-art.js';
 import { migrateTabSession } from './tab-session.js';
-import { vineDescription } from './vine-art.js';
+import { cardText } from './card-text.js';
 import { renderTuscanyBoard } from './tuscany-board.js';
 import { pollState } from './polling.js';
 import { initPassword, renderPassword, clearPassword } from './password-ui.js';
@@ -311,7 +311,7 @@ function render(v) {
       el('span', types[c.type] || c.type, 'type'),
       el('h4', c.name),
       el('small', c.englishName, 'card-english'),
-      c.type === 'vine' ? vineDescription(c.description) : el('p', c.description),
+      cardText(c.description),
     );
     if (c.type === 'order')
       e.append(

@@ -1,3 +1,4 @@
+import { cardText } from './card-text.js';
 import { cardArt } from './card-art.js';
 import { openActionPanel } from './action-panel.js';
 export { cardArt } from './card-art.js';
@@ -83,8 +84,9 @@ export function renderEE(v, act, online) {
       const w = (v.specialWorkerCatalog || []).find((item) => item.id === id);
       const card = n('article', null, 'ee-parent-card');
       card.append(
+        cardArt({ ...w, id: 'worker-' + id, type: 'worker' }),
         n('strong', w?.name || id),
-        n('small', w?.description || '特殊能力由服务器按规则结算'),
+        cardText(w?.description || '特殊能力由服务器按规则结算', 'small'),
       );
       cards.append(card);
     }
@@ -106,7 +108,7 @@ export function renderEE(v, act, online) {
         cardArt(c),
         n('strong', c.name),
         n('small', c.englishName, 'card-english'),
-        n('small', c.description || '开局资源见当前选择'),
+        cardText(c.description || '开局资源见当前选择', 'small'),
       );
       row.append(a);
     }

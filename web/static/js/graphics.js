@@ -1,3 +1,4 @@
+import { buildingCardArt } from './card-illustrations.js';
 import { baseBuildings, structureBuildings } from './building-catalog.js';
 import { hint } from './hints.js';
 // Original offline artwork; public state only.
@@ -213,17 +214,7 @@ export function renderEstate(v, p, buildings, types) {
     fields.append(e);
   }
   content.append(fields);
-  const structures = node('div', null, 'structures'),
-    icons = {
-      trellis: 'trellis',
-      irrigation: 'irrigation',
-      medium_cellar: 'cellar',
-      large_cellar: 'cellar',
-      cottage: 'cottage',
-      windmill: 'windmill',
-      tasting_room: 'estate',
-      yoke: 'field',
-    };
+  const structures = node('div', null, 'structures');
   const shownBuildings = [
     ...Object.entries(buildings),
     ...(v.config?.structures
@@ -242,7 +233,7 @@ export function renderEstate(v, p, buildings, types) {
         p.fields.some((f) => f.structure === id),
       n = node('div', null, 'structure' + (built ? ' built' : ''));
     n.append(
-      art(icons[id] || 'estate', 'building-art'),
+      buildingCardArt(id, 'building-art', label.split(' · ')[0]),
       node('span', label.split(' · ')[0]),
       node('small', built ? '已建成' : label.split(' · ')[1] + ' · 未建'),
     );

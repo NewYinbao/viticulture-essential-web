@@ -1,3 +1,5 @@
+import { buildingCardArt } from './card-illustrations.js';
+import { cardText } from './card-text.js';
 import { tuscanyInputState, renderTuscanyInputs } from './tuscany-inputs.js';
 import { buildings, structureBuildings, availableBuildings } from './building-catalog.js';
 import { localCard } from './card-i18n.js';
@@ -291,7 +293,7 @@ export function openActionPanel(space, view, act, options = {}) {
     button.setAttribute('aria-pressed', String(selected));
     if (options.image) button.append(options.image);
     button.append(node('strong', label));
-    if (options.meta) button.append(node('span', options.meta, 'choice-meta'));
+    if (options.meta) button.append(cardText(options.meta, 'span', 'choice-meta'));
     button.append(
       node(
         'small',
@@ -940,13 +942,13 @@ export function openActionPanel(space, view, act, options = {}) {
         } else if (kind() === 'build') {
           const grid = group('选择建筑');
           for (const b of availableBuildings(view)) {
-            const [id, label, cost, picture, effect] = b,
+            const [id, label, cost, , effect] = b,
               price = buildingPrice(b),
               reason = buildingReason(b),
               owned = p.buildings.includes(id);
             choice(grid, 'building', id, label, {
               cls: 'building-choice',
-              image: art(picture === 'building' ? 'estate' : picture, 'choice-art'),
+              image: buildingCardArt(id, 'choice-art', label),
               meta: price + ' 金币' + (cost !== price ? ' · 已减 ' + (cost - price) : ''),
               reason,
               state: '可建造',

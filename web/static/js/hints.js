@@ -1,3 +1,4 @@
+import { cardText } from './card-text.js';
 // Short inline state, detail on pointer hover / keyboard focus / touch.
 export function hint(element, message, blocked = false) {
   element.dataset.hint = message;
@@ -30,7 +31,7 @@ export function installHints() {
     }
     if (owner && owner !== next) owner.removeAttribute('aria-describedby');
     owner = next;
-    bubble.textContent = next.dataset.hint;
+    bubble.replaceChildren(cardText(next.dataset.hint, 'span'));
     next.setAttribute('aria-describedby', bubble.id);
     bubble.hidden = false;
     // A dialog's top layer also needs to contain its tooltip.

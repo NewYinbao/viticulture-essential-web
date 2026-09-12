@@ -1,6 +1,6 @@
 import { localCard } from './card-i18n.js';
 import { cardArt } from './card-art.js';
-import { vineDescription } from './vine-art.js';
+import { cardText } from './card-text.js';
 const types = {
   vine: '葡萄藤',
   order: '订单',
@@ -99,7 +99,7 @@ function render() {
       node('h3', c.name),
     );
     if (c.englishName && c.englishName !== c.name) article.append(node('small', c.englishName));
-    article.append(c.type === 'vine' ? vineDescription(c.description) : node('p', c.description));
+    article.append(cardText(c.description));
     if (c.type === 'order') article.append(node('p', `奖励 ${c.points} 分 · 年收入 +${c.income}`));
     if (c.type === 'structure') article.append(node('p', `费用 ${c.structureCost} 金币`));
     if (c.requiresTuscany) article.append(node('small', '需要 Tuscany 主板', 'library-source'));
